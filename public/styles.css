@@ -50,3 +50,5 @@
 :root[data-theme=light] .theme-toggle .sun-icon{opacity:1;transform:rotate(0) scale(1)}
 :root.theme-reveal-active,:root.theme-reveal-active body,:root.theme-reveal-active .site-shell,:root.theme-reveal-active .site-shell *,:root.theme-reveal-active .site-shell *::before,:root.theme-reveal-active .site-shell *::after{transition:none!important}
 @media(prefers-reduced-motion:reduce){.theme-toggle .moon-icon,.theme-toggle .sun-icon{transition:none!important}}
+.stat-corner{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.header-cta svg{display:inline-block;width:15px;height:15px;margin-left:10px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

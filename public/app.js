@@ -3,6 +3,7 @@ const path = window.location.pathname.replace(/\/$/, '') || '/';
 const route = { '/': 'home', '/support': 'support', '/privacy': 'privacy', '/terms': 'terms' }[path] || 'home';
 
 const arrow = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>';
+const cornerArrow = '<svg class="stat-corner" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18 18 6M8 6h10v10"/></svg>';
 
 const pages = {
   home: `
@@ -29,8 +30,8 @@ const pages = {
     <section class="live-section container" aria-labelledby="live-title">
       <div class="section-heading"><div><div class="section-kicker">THE COMMUNITY, RIGHT NOW</div><h2 id="live-title">A place that's always on.</h2></div><div class="live-indicator"><span></span> LIVE SERVER SNAPSHOT</div></div>
       <div class="stats-grid">
-        <article class="stat-card"><div class="stat-icon online-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><div class="stat-number" id="online-count">—</div><div class="stat-label">Members online</div><p>People here and ready to chat.</p><span class="stat-corner">↗</span></article>
-        <article class="stat-card"><div class="stat-icon members-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20a7 7 0 0 1 14 0M17 5a3 3 0 0 1 0 6m2 3a6 6 0 0 1 3 6"/></svg></div><div class="stat-number" id="member-count">—</div><div class="stat-label">Total members</div><p>One community, endless connections.</p><span class="stat-corner">↗</span></article>
+        <article class="stat-card"><div class="stat-icon online-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><div class="stat-number" id="online-count">—</div><div class="stat-label">Members online</div><p>People here and ready to chat.</p>${cornerArrow}</article>
+        <article class="stat-card"><div class="stat-icon members-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20a7 7 0 0 1 14 0M17 5a3 3 0 0 1 0 6m2 3a6 6 0 0 1 3 6"/></svg></div><div class="stat-number" id="member-count">—</div><div class="stat-label">Total members</div><p>One community, endless connections.</p>${cornerArrow}</article>
         <article class="stat-card server-card"><div class="stat-icon server-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg></div><div class="server-card-label">YOUR NEXT HANGOUT</div><div class="server-name" id="server-name">Discord server</div><p id="server-description">The door is open. Come say hello.</p><a class="server-join invite-link" href="#join" aria-disabled="true">Join community ${arrow}</a></article>
       </div>
       <p class="data-note" id="data-note" role="status">Connecting to Discord…</p>
