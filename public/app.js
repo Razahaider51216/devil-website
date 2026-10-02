@@ -1,6 +1,23 @@
 const app = document.querySelector('#app');
 const path = window.location.pathname.replace(/\/$/, '') || '/';
 const route = { '/': 'home', '/support': 'support', '/privacy': 'privacy', '/terms': 'terms' }[path] || 'home';
+const consentCookie = 'devil-consent';
+const cookieChoice = () => document.cookie.split('; ').find(item => item.startsWith(`${consentCookie}=`))?.split('=')[1];
+const cookieBanner = document.querySelector('#cookie-banner');
+cookieBanner.hidden = ['accepted', 'rejected'].includes(cookieChoice());
+document.querySelectorAll('[data-cookie-choice]').forEach(button => {
+  button.addEventListener('click', () => {
+    const choice = button.dataset.cookieChoice;
+    document.cookie = `${consentCookie}=${choice}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
+    if (choice === 'accepted') localStorage.setItem('devil-theme', document.documentElement.dataset.theme);
+    else localStorage.removeItem('devil-theme');
+    cookieBanner.hidden = true;
+  });
+});
+document.querySelector('.cookie-settings').addEventListener('click', () => {
+  cookieBanner.hidden = false;
+  cookieBanner.querySelector('.cookie-accept').focus();
+});
 
 const arrow = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>';
 const cornerArrow = '<svg class="stat-corner" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18 18 6M8 6h10v10"/></svg>';
@@ -21,7 +38,7 @@ const pages = {
       <div class="hero-art" aria-label="Bot profile and server activity">
         <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
         <span class="orbit-star star-one">✦</span><span class="orbit-star star-two">✧</span><span class="orbit-star star-three">✦</span>
-        <div class="orbit-bubble bubble-one"><span class="bubble-status"></span> Online now</div>
+        <div class="orbit-bubble bubble-one"><span class="bubble-status"></span> Community activity</div>
         <div class="orbit-bubble bubble-two">✦ &nbsp;Community first</div>
         <div class="bot-portrait"><div class="portrait-glow"></div><div class="bot-avatar" id="hero-avatar"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M20 30 9 10l2 35a41 41 0 0 0 0 13c3 21 18 33 39 33s36-12 39-33a41 41 0 0 0 0-13l2-35-11 20C72 22 62 18 50 18S28 22 20 30Z" fill="currentColor"/><path d="m25 54 17 5-6 6-11-11Zm50 0-17 5 6 6 11-11Z" fill="#fff"/><path d="M39 73c7 4 15 4 22 0" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg></div></div>
       </div>
@@ -50,7 +67,7 @@ const pages = {
   `,
   privacy: `
     <section class="inner-hero container"><div class="eyebrow"><span class="eyebrow-dot"></span> ข้อมูลสำคัญ</div><h1>นโยบาย<span>ความเป็นส่วนตัว</span></h1><p>ข้อมูลเกี่ยวกับการใช้งานและการจัดการข้อมูลเมื่อคุณเยี่ยมชมเว็บไซต์นี้</p></section>
-    <article class="legal-content container"><div class="legal-aside"><span>เนื้อหาในหน้านี้</span><a href="#overview">ภาพรวม</a><a href="#information">ข้อมูลที่ใช้</a><a href="#services">บริการภายนอก</a><a href="#choices">ทางเลือกของคุณ</a><a href="#contact">ติดต่อเรา</a></div><div class="legal-body"><p class="legal-updated">ปรับปรุงล่าสุด: 3 ตุลาคม 2569</p><section id="overview"><h2>ภาพรวม</h2><p>เว็บไซต์ DEVIL BOT แสดงข้อมูลเกี่ยวกับบอต Discord และเซิร์ฟเวอร์ที่บอตเข้าร่วม นโยบายนี้ครอบคลุมการใช้งานเว็บไซต์เท่านั้น การทำงานของบอตภายใน Discord อาจมีการใช้ข้อมูลเพิ่มเติม ซึ่งผู้ดูแลบอตควรแจ้งให้ทราบแยกต่างหากก่อนเปิดให้บริการ</p></section><section id="information"><h2>ข้อมูลที่ใช้</h2><p>เว็บไซต์ดึงชื่อและรูปโปรไฟล์ของบอต ชื่อเซิร์ฟเวอร์ จำนวนสมาชิกโดยประมาณ และจำนวนผู้ที่ออนไลน์โดยประมาณจาก Discord แล้วแสดงต่อผู้เข้าชม เว็บไซต์ไม่ขอให้ผู้เข้าชมสร้างบัญชีหรือกรอกข้อมูลส่วนบุคคล</p><p>การเลือกธีมสว่างหรือมืดจะถูกบันทึกไว้ใน local storage ของเบราว์เซอร์ ผู้ให้บริการโฮสต์อาจเก็บบันทึกการเข้าถึงตามการตั้งค่าของระบบ ซึ่งอาจรวมถึงที่อยู่ IP และรายละเอียดคำขอ</p></section><section id="services"><h2>บริการภายนอก</h2><p>Discord เป็นผู้ให้ข้อมูลบอตและเซิร์ฟเวอร์ รวมถึงจัดเก็บรูปโปรไฟล์ หากคุณกดลิงก์เพื่อเข้าร่วมเซิร์ฟเวอร์ การใช้งาน Discord จะอยู่ภายใต้นโยบายของ Discord เบราว์เซอร์ของคุณอาจเชื่อมต่อกับ Google Fonts เพื่อโหลดแบบอักษรที่ใช้บนเว็บไซต์</p></section><section id="choices"><h2>ทางเลือกของคุณ</h2><p>คุณสามารถเปลี่ยนธีมได้ทุกเมื่อด้วยปุ่มในส่วนหัว และลบการตั้งค่าที่บันทึกไว้ได้โดยล้าง local storage ของเบราว์เซอร์ คุณเป็นผู้ตัดสินใจว่าจะเปิดลิงก์เชิญไปยัง Discord หรือไม่</p></section><section id="contact"><h2>ติดต่อเรา</h2><p>หากมีข้อสงสัยเกี่ยวกับเว็บไซต์หรือการใช้ข้อมูลของชุมชน โปรดไปที่ <a href="/support">หน้าช่วยเหลือ</a> และติดต่อทีมงานผ่าน Discord</p></section></div></article>
+    <article class="legal-content container"><div class="legal-aside"><span>เนื้อหาในหน้านี้</span><a href="#overview">ภาพรวม</a><a href="#information">ข้อมูลที่ใช้</a><a href="#services">บริการภายนอก</a><a href="#choices">ทางเลือกของคุณ</a><a href="#contact">ติดต่อเรา</a></div><div class="legal-body"><p class="legal-updated">ปรับปรุงล่าสุด: 3 ตุลาคม 2569</p><section id="overview"><h2>ภาพรวม</h2><p>เว็บไซต์ DEVIL BOT แสดงข้อมูลเกี่ยวกับบอต Discord และเซิร์ฟเวอร์ที่บอตเข้าร่วม นโยบายนี้ครอบคลุมการใช้งานเว็บไซต์เท่านั้น การทำงานของบอตภายใน Discord อาจมีการใช้ข้อมูลเพิ่มเติม ซึ่งผู้ดูแลบอตควรแจ้งให้ทราบแยกต่างหากก่อนเปิดให้บริการ</p></section><section id="information"><h2>ข้อมูลที่ใช้</h2><p>เว็บไซต์ดึงชื่อและรูปโปรไฟล์ของบอต ชื่อเซิร์ฟเวอร์ จำนวนสมาชิกโดยประมาณ และจำนวนผู้ที่ออนไลน์โดยประมาณจาก Discord แล้วแสดงต่อผู้เข้าชม เว็บไซต์ไม่ขอให้ผู้เข้าชมสร้างบัญชีหรือกรอกข้อมูลส่วนบุคคล</p><p>เว็บไซต์ใช้คุกกี้ที่จำเป็นเพื่อจำว่าคุณยอมรับหรือไม่ยอมรับการบันทึกธีมเป็นเวลา 1 ปี หากยอมรับ การเลือกธีมสว่างหรือมืดจะถูกบันทึกไว้ใน local storage ของเบราว์เซอร์ หากไม่ยอมรับ เว็บจะไม่บันทึกธีม ผู้ให้บริการโฮสต์อาจเก็บบันทึกการเข้าถึงตามการตั้งค่าของระบบ ซึ่งอาจรวมถึงที่อยู่ IP และรายละเอียดคำขอ</p></section><section id="services"><h2>บริการภายนอก</h2><p>Discord เป็นผู้ให้ข้อมูลบอตและเซิร์ฟเวอร์ รวมถึงจัดเก็บรูปโปรไฟล์ หากคุณกดลิงก์เพื่อเข้าร่วมเซิร์ฟเวอร์ การใช้งาน Discord จะอยู่ภายใต้นโยบายของ Discord เบราว์เซอร์ของคุณอาจเชื่อมต่อกับ Google Fonts เพื่อโหลดแบบอักษรที่ใช้บนเว็บไซต์</p></section><section id="choices"><h2>ทางเลือกของคุณ</h2><p>คุณสามารถเปลี่ยนธีมได้ทุกเมื่อด้วยปุ่มในส่วนหัว และเปลี่ยนตัวเลือกคุกกี้ได้จากปุ่มตั้งค่าคุกกี้ท้ายหน้า หากไม่ยอมรับ เว็บจะลบธีมที่เคยบันทึกไว้ คุณเป็นผู้ตัดสินใจว่าจะเปิดลิงก์เชิญไปยัง Discord หรือไม่</p></section><section id="contact"><h2>ติดต่อเรา</h2><p>หากมีข้อสงสัยเกี่ยวกับเว็บไซต์หรือการใช้ข้อมูลของชุมชน โปรดไปที่ <a href="/support">หน้าช่วยเหลือ</a> และติดต่อทีมงานผ่าน Discord</p></section></div></article>
   `,
   terms: `
     <section class="inner-hero container"><div class="eyebrow"><span class="eyebrow-dot"></span> ข้อมูลสำคัญ</div><h1>ข้อกำหนด<span>การให้บริการ</span></h1><p>เงื่อนไขการใช้เว็บไซต์และลิงก์ไปยังชุมชน Discord</p></section>
@@ -91,7 +108,7 @@ themeButton.addEventListener('click', async () => {
   const next = current === 'dark' ? 'light' : 'dark';
   const applyTheme = () => {
     root.dataset.theme = next;
-    localStorage.setItem('devil-theme', next);
+    if (cookieChoice() === 'accepted') localStorage.setItem('devil-theme', next);
     updateThemeButton();
   };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || !Element.prototype.animate) {
@@ -262,4 +279,7 @@ async function loadStatus() {
   }
 }
 loadStatus();
-if (route === 'home') setInterval(loadStatus, 60_000);
+if (route === 'home') {
+  setInterval(() => { if (!document.hidden) loadStatus(); }, 60_000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadStatus(); });
+}

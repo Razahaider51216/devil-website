@@ -16,9 +16,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script>document.documentElement.dataset.theme = localStorage.getItem('devil-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');</script>
-  <link rel="stylesheet" href="/styles.css?v=20261003-5">
-  <script src="/app.js?v=20261003-5" defer></script>
+  <script>const savedTheme = document.cookie.split('; ').includes('devil-consent=accepted') ? localStorage.getItem('devil-theme') : null; document.documentElement.dataset.theme = savedTheme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');</script>
+  <link rel="stylesheet" href="/styles.css?v=20261003-6">
+  <script src="/app.js?v=20261003-6" defer></script>
 </head>
 <body>
   <div class="site-shell">
@@ -54,8 +54,18 @@
         <p>Made for communities that never sleep.</p>
         <div class="footer-links"><a href="/support">Support</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>
       </div>
-      <div class="footer-bottom"><span>© <span id="year"></span> DEVIL BOT</span><span>Devil</span></div>
+      <div class="footer-bottom"><span>© <span id="year"></span> DEVIL BOT</span><span>Devil</span><button class="cookie-settings" type="button">ตั้งค่าคุกกี้</button></div>
     </footer>
   </div>
+  <aside class="cookie-banner" id="cookie-banner" aria-labelledby="cookie-title" hidden>
+    <div class="cookie-copy">
+      <h2 id="cookie-title">การใช้งานคุกกี้</h2>
+      <p>เว็บนี้ใช้คุกกี้ที่จำเป็นเพื่อจดจำตัวเลือกของคุณ หากยอมรับ เว็บจะบันทึกโหมดสว่างหรือมืดไว้ในเบราว์เซอร์ด้วย อ่านรายละเอียดใน <a href="/privacy">นโยบายความเป็นส่วนตัว</a></p>
+    </div>
+    <div class="cookie-actions">
+      <button class="cookie-reject" type="button" data-cookie-choice="rejected">ไม่ยอมรับ</button>
+      <button class="cookie-accept" type="button" data-cookie-choice="accepted">ยอมรับ</button>
+    </div>
+  </aside>
 </body>
 </html>
