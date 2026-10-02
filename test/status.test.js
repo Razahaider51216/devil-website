@@ -20,7 +20,7 @@ test('maps Discord bot and guild data without exposing the token, then caches it
   };
 
   try {
-    const { getBotData } = await import('../server.js');
+    const { getBotData } = await import('../lib/discord.js');
     const first = await getBotData();
     const second = await getBotData();
     assert.deepEqual(first, second);
@@ -56,7 +56,7 @@ test('loads every page when the bot has more than 200 joined servers', async () 
   };
 
   try {
-    const { getBotData } = await import('../server.js?pagination-test');
+    const { getBotData } = await import('../lib/discord.js?pagination-test');
     const data = await getBotData();
     assert.equal(data.servers.length, 201);
     assert.equal(data.servers.at(-1).members, 201);
