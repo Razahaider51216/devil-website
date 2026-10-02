@@ -59,6 +59,3 @@
 .cookie-copy{max-width:670px}.cookie-copy h2{font:700 19px 'Noto Sans Thai',sans-serif;margin:0 0 7px}.cookie-copy p{font-size:13px;line-height:1.8;color:var(--muted);margin:0}.cookie-copy a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .cookie-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}.cookie-actions button{font:700 13px 'Noto Sans Thai',sans-serif;border-radius:9px;padding:12px 19px;cursor:pointer;white-space:nowrap;transition:background-color .3s,color .3s,border-color .3s,transform .3s}.cookie-actions button:hover{transform:translateY(-2px)}.cookie-reject{background:var(--surface);color:var(--text);border:1px solid var(--border)}.cookie-accept{background:var(--accent);color:#fff;border:1px solid var(--accent)}
 @media(max-width:760px){.cookie-banner{left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));padding:21px;display:block}.cookie-actions{margin-top:17px}.cookie-actions button{flex:1}.footer-bottom{gap:10px;flex-wrap:wrap}}
-.bubble-one .bubble-status{background:var(--muted-2);box-shadow:0 0 0 4px var(--border)}
-.bubble-one[data-status=online] .bubble-status{background:#64c59b;box-shadow:0 0 0 4px rgba(100,197,155,.12)}
-.bubble-one[data-status=offline] .bubble-status{background:#ee6874;box-shadow:0 0 0 4px rgba(238,104,116,.14)}

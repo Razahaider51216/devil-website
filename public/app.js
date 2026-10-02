@@ -38,7 +38,7 @@ const pages = {
       <div class="hero-art" aria-label="Bot profile and server activity">
         <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
         <span class="orbit-star star-one">✦</span><span class="orbit-star star-two">✧</span><span class="orbit-star star-three">✦</span>
-        <div class="orbit-bubble bubble-one" id="bot-presence"><span class="bubble-status"></span><span id="bot-presence-label">Checking bot status</span></div>
+        <div class="orbit-bubble bubble-one"><span class="bubble-status"></span> BOT ONLINE</div>
         <div class="orbit-bubble bubble-two">✦ &nbsp;Community first</div>
         <div class="bot-portrait"><div class="portrait-glow"></div><div class="bot-avatar" id="hero-avatar"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M20 30 9 10l2 35a41 41 0 0 0 0 13c3 21 18 33 39 33s36-12 39-33a41 41 0 0 0 0-13l2-35-11 20C72 22 62 18 50 18S28 22 20 30Z" fill="currentColor"/><path d="m25 54 17 5-6 6-11-11Zm50 0-17 5 6 6 11-11Z" fill="#fff"/><path d="M39 73c7 4 15 4 22 0" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg></div></div>
       </div>
@@ -253,10 +253,6 @@ async function loadStatus() {
     const data = await response.json();
     setInvite(data.inviteUrl);
     if (route !== 'home') return;
-    const presence = document.querySelector('#bot-presence');
-    const presenceLabel = document.querySelector('#bot-presence-label');
-    presence.dataset.status = data.botOnline === true ? 'online' : data.botOnline === false ? 'offline' : 'unknown';
-    presenceLabel.textContent = data.botOnline === true ? 'BOT ONLINE' : data.botOnline === false ? 'BOT OFFLINE' : 'BOT STATUS UNKNOWN';
     renderServers(data.servers);
     if (data.bot) {
       document.querySelector('#hero-bot-name').textContent = data.bot.name;
@@ -277,8 +273,6 @@ async function loadStatus() {
       : data.bot && data.server ? 'Approximate counts from Discord · Updated about every minute' : 'Some live details are temporarily unavailable. Please try again soon.';
   } catch {
     if (route === 'home') {
-      document.querySelector('#bot-presence').dataset.status = 'unknown';
-      document.querySelector('#bot-presence-label').textContent = 'BOT STATUS UNKNOWN';
       renderServers(null);
       document.querySelector('#data-note').textContent = 'Live details are temporarily unavailable. Please try again soon.';
     }
