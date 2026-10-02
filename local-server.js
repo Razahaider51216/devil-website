@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { getBotData } from './lib/discord.js';
+import { getBotStatus } from './lib/bot-status.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(root, 'public');
@@ -22,6 +23,12 @@ export const server = http.createServer(async (request, response) => {
   }
   if (pathname === '/api/status') {
     const body = JSON.stringify(await getBotData());
+    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    response.end(request.method === 'HEAD' ? undefined : body);
+    return;
+  }
+  if (pathname === '/api/bot-status') {
+    const body = JSON.stringify(await getBotStatus());
     response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     response.end(request.method === 'HEAD' ? undefined : body);
     return;

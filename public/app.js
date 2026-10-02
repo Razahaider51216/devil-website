@@ -38,7 +38,7 @@ const pages = {
       <div class="hero-art" aria-label="Bot profile and server activity">
         <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
         <span class="orbit-star star-one">✦</span><span class="orbit-star star-two">✧</span><span class="orbit-star star-three">✦</span>
-        <div class="orbit-bubble bubble-one"><span class="bubble-status"></span> BOT ONLINE</div>
+        <div class="orbit-bubble bubble-one" id="bot-status-badge" data-status="offline" role="status"><span class="bubble-status"></span><span id="bot-status-label">BOT OFFLINE</span></div>
         <div class="orbit-bubble bubble-two">✦ &nbsp;Community first</div>
         <div class="bot-portrait"><div class="portrait-glow"></div><div class="bot-avatar" id="hero-avatar"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M20 30 9 10l2 35a41 41 0 0 0 0 13c3 21 18 33 39 33s36-12 39-33a41 41 0 0 0 0-13l2-35-11 20C72 22 62 18 50 18S28 22 20 30Z" fill="currentColor"/><path d="m25 54 17 5-6 6-11-11Zm50 0-17 5 6 6 11-11Z" fill="#fff"/><path d="M39 73c7 4 15 4 22 0" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg></div></div>
       </div>
@@ -280,6 +280,21 @@ async function loadStatus() {
 }
 loadStatus();
 if (route === 'home') {
+  async function loadBotStatus() {
+    try {
+      const response = await fetch('/api/bot-status', { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+      if (!response.ok) throw new Error('Bot status request failed');
+      const data = await response.json();
+      const online = data.online === true;
+      document.querySelector('#bot-status-badge').dataset.status = online ? 'online' : 'offline';
+      document.querySelector('#bot-status-label').textContent = online ? 'BOT ONLINE' : 'BOT OFFLINE';
+    } catch {
+      document.querySelector('#bot-status-badge').dataset.status = 'offline';
+      document.querySelector('#bot-status-label').textContent = 'BOT OFFLINE';
+    }
+  }
+  loadBotStatus();
+  setInterval(() => { if (!document.hidden) loadBotStatus(); }, 10_000);
   setInterval(() => { if (!document.hidden) loadStatus(); }, 60_000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadStatus(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadStatus(); loadBotStatus(); } });
 }
