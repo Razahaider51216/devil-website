@@ -6,9 +6,14 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env local-server.js",
     "dev": "node --env-file-if-exists=.env --watch local-server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "sync:catalog": "node scripts/sync-catalog.js",
+    "install:bot": "node scripts/install-bot.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.2"
   }
 }

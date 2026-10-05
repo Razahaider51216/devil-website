@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { getBotData } from './lib/discord.js';
 import { getBotStatus } from './lib/bot-status.js';
+import portal from './api/portal.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(root, 'public');
@@ -11,11 +12,14 @@ const port = Number(process.env.PORT || 3000);
 const staticFiles = {
   '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
+  '/portal-app.js': ['portal-app.js', 'text/javascript; charset=utf-8'],
+  '/portal.css': ['portal.css', 'text/css; charset=utf-8'],
   '/favicon.svg': ['favicon.svg', 'image/svg+xml']
 };
 
 export const server = http.createServer(async (request, response) => {
   const pathname = new URL(request.url || '/', 'http://localhost').pathname;
+  if (pathname === '/api/portal') return portal(request, response);
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.writeHead(405, { Allow: 'GET, HEAD' });
     response.end();
@@ -42,8 +46,9 @@ export const server = http.createServer(async (request, response) => {
     response.end();
     return;
   }
-  const isPage = ['/', '/privacy', '/terms', '/support'].includes(pathname);
-  const file = isPage ? ['index.html', 'text/html; charset=utf-8'] : staticFiles[pathname];
+  const isPage = ['/', '/commands', '/servers', '/features', '/updates', '/dashboard', '/admin'].includes(pathname);
+  const legal = ['/privacy', '/terms', '/support'].includes(pathname);
+  const file = isPage ? ['index.html', 'text/html; charset=utf-8'] : legal ? ['legal.html', 'text/html; charset=utf-8'] : staticFiles[pathname];
   if (!file) {
     response.writeHead(404);
     response.end('Not found');

@@ -3,9 +3,15 @@
   "framework": null,
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
-    { "source": "/privacy", "destination": "/index.html" },
-    { "source": "/terms", "destination": "/index.html" },
-    { "source": "/support", "destination": "/index.html" },
+    { "source": "/privacy", "destination": "/legal.html" },
+    { "source": "/terms", "destination": "/legal.html" },
+    { "source": "/support", "destination": "/legal.html" },
+    { "source": "/commands", "destination": "/index.html" },
+    { "source": "/servers", "destination": "/index.html" },
+    { "source": "/features", "destination": "/index.html" },
+    { "source": "/updates", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
     { "source": "/bot-avatar", "destination": "/api/bot-avatar" }
   ]
 }

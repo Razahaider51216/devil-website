@@ -1,0 +1,6 @@
+# Add this handler inside your existing HTTPS site block, before its catch-all.
+# The incoming Authorization header MUST be preserved. Never inject a secret:
+# doing that would let anonymous visitors call the bot's authenticated API.
+handle /dashboard {
+    reverse_proxy 127.0.0.1:8788
+}

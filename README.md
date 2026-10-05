@@ -1,6 +1,33 @@
 # DEVIL BOT website
 
-A responsive Discord bot homepage with live bot details and member counts for every joined server, Thai legal pages, and a saved blue light/dark theme preference. The bot token is used only by the Node server.
+A Thai Discord portal with separate Public and VIP command catalogs, categorized communities, live Owner profiles, Discord OAuth login, a server dashboard, and an Owner CMS. Private commands are excluded. Existing support, privacy and terms pages remain available. Secrets are used only on the server.
+
+## New portal setup
+
+The frontend and APIs are in this repository. The dashboard runs next to the **public** Devil bot so configuration changes update the bot's live in-memory data through its existing `saveData()` function. Do not write directly to `data-public.json` from the website: the running bot could overwrite it. Website content and audit records persist in `website-content.json` on the bot host, rather than an ephemeral Vercel filesystem.
+
+1. Run `npm ci` in the website folder. Copy `.env.example` to `.env` if needed and keep your existing bot token.
+2. Set `DISCORD_CLIENT_ID` to the **public** bot application ID and `DISCORD_CLIENT_SECRET` to its OAuth2 client secret. Set `APP_URL` to the exact website origin without a trailing slash (for local development: `http://localhost:3000`).
+3. In the Discord Developer Portal, add the exact redirect URL: `http://localhost:3000/api/portal?action=callback` locally, and `https://YOUR-DOMAIN/api/portal?action=callback` in production. Login requests only `identify` and `guilds` scopes.
+4. Set `SESSION_SECRET` to at least 32 random characters. Set `OWNER_IDS` to comma-separated Discord **user IDs**. These IDs control both homepage cards and CMS access. Never paste tokens into website forms.
+5. Set `BOT_DASHBOARD_SECRET` to a separate random secret of at least 32 characters. Use the **same value** in website and public-bot environments. Configure `OWNER_IDS` identically on both sides. Add the bot environment keys from `bot-integration/.env.example` without overwriting existing bot settings.
+6. Install the bridge with `npm run install:bot -- "C:\Users\Administrator\Documents\Devil"`. This copies the bridge and settings schema, backs up `index.js` and `verify-system.js` on first installation, adds the dashboard hook, and exposes the existing Verify publisher. Re-running updates the hook. Restart the public bot using your existing process manager; installing files does not restart it.
+7. For local hosting use `BOT_DASHBOARD_API_URL=http://127.0.0.1:8788/dashboard`. For Vercel expose `/dashboard` over HTTPS using the example in `bot-integration/Caddyfile.example`, and set `BOT_DASHBOARD_API_URL=https://YOUR-BOT-HOST/dashboard`. Preserve the client's Authorization header; do **not** reuse the health endpoint's secret-injection behavior for this route.
+8. Run `npm start`. In production set all website environment variables in Vercel, including `APP_URL`, then redeploy. Local `.env` values are not uploaded by Git.
+
+`npm run sync:catalog -- "C:\Users\Administrator\Documents\Devil"` re-extracts all command names, descriptions, options and public scope restrictions from the actual command builders. The VIP list comes from `PREMIUM_SHOP_COMMANDS` in `shop.js`: `setbuy`, `set-shop`, `shop`. Run this after bot command changes, then run `install:bot` when the settings schema changes.
+
+### Dashboard and CMS behavior
+
+Only servers the logged-in user can manage appear in the picker. The website verifies Discord guild permissions on each read/write; the bridge independently fetches the member and checks permissions again. The bot must be a member. Welcome and Ticket accept Manage Server; the other systems require Administrator. VIP Shop uses the bot's existing `PREMIUM_GUILD_IDS` / `PREMIUM_SERVER_IDS` allowlist. Chat and Discord announcements remain restricted to their configured guilds.
+
+The dashboard supports Welcome/Goodbye, Ticket text/buttons/automatic replies, spam filtering with channel/category selects and punishment settings, Rank/XP/role rewards, shop schedules, script-search channels, Verify panels/roles, Verify-not channels, province panels, Giveaway creation, VIP products/payments/purchase channels, and restricted Chat/announcement settings. Use **Save and publish** to create or update Discord panels. A failed publish reports that the settings were saved, together with the publish error; it never claims a panel succeeded when Discord rejected it. Changes are checked against the version read from the bot; reload after a conflict.
+
+The Owner CMS creates, edits, removes and publishes feature cards (text/image/command), website update posts, and server categories. Drafts are excluded from the public content API. Deleted entries are removed when Save all succeeds; edits before saving are local to the page. The bot host stores a bounded audit log. Owner IDs and credentials are environment configuration, not editable through public endpoints.
+
+Owner avatars, banners and avatar decorations are rendered only when returned by Discord's [official User API](https://docs.discord.com/developers/resources/user). Unsupported profile effects are not fabricated. Login follows Discord's [OAuth2 authorization code flow](https://docs.discord.com/developers/topics/oauth2), uses a short-lived state cookie, and stores the access token in an encrypted HttpOnly session cookie (maximum one hour). All mutations require an origin check and session CSRF token. Logout removes the browser session; an already copied cookie remains valid until its short expiry or until `SESSION_SECRET` rotates.
+
+Run `npm test` to check OAuth state/session protection, role and guild access, VIP enforcement, live bot writes, stale configuration rejection, publish failures, CMS persistence, catalog filtering, and interactive DOM behavior. Full Discord OAuth and live panel publication require real environment credentials and a running bot. Browser visual QA requires an available Browser connection.
 
 ## Run locally
 
@@ -8,7 +35,7 @@ A responsive Discord bot homepage with live bot details and member counts for ev
 2. Set `DISCORD_BOT_TOKEN` to your bot token and `DISCORD_INVITE_URL` to a permanent server invite. `DISCORD_GUILD_ID` is optional and chooses the server featured in the homepage snapshot; without it, the first joined server is featured.
 3. Run `npm start` and open `http://localhost:3000`.
 
-Node.js 20 or newer is required. No package installation is needed.
+Node.js 20 or newer is required. Runtime code uses Node built-ins; `npm ci` installs the DOM test dependency.
 
 ## Deploy on Vercel
 

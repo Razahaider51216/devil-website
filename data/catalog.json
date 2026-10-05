@@ -1,0 +1,558 @@
+{
+  "syncedAt": "2026-10-05T15:56:08.860Z",
+  "commands": [
+    {
+      "options": [],
+      "name": "set-shop",
+      "description": "เปิดเมนูตั้งค่าสินค้าและช่องทางรับเงิน",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "VIP",
+      "scope": "global",
+      "category": "Shop"
+    },
+    {
+      "options": [
+        {
+          "channel_types": [
+            0,
+            5
+          ],
+          "name": "channel",
+          "description": "ช่องสำหรับแสดงรายการสั่งซื้อ",
+          "required": true,
+          "type": 7
+        }
+      ],
+      "name": "setbuy",
+      "description": "ตั้งค่าช่องแสดงรายการสั่งซื้อที่ชำระเงินสำเร็จ",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "VIP",
+      "scope": "global",
+      "category": "Shop"
+    },
+    {
+      "options": [
+        {
+          "channel_types": [
+            0,
+            5
+          ],
+          "name": "channel",
+          "description": "ช่องสำหรับลงหน้าร้านค้า",
+          "required": true,
+          "type": 7
+        }
+      ],
+      "name": "shop",
+      "description": "ลงหน้าร้าน DEVIL SHOP ในช่องที่เลือก",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "VIP",
+      "scope": "global",
+      "category": "Shop"
+    },
+    {
+      "options": [
+        {
+          "type": 1,
+          "name": "panel",
+          "description": "เปิดแผงควบคุมเปิด - ปิดร้าน",
+          "options": []
+        }
+      ],
+      "name": "setup",
+      "description": "ตั้งค่าระบบเสริมของบอท Devil",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Tools"
+    },
+    {
+      "options": [
+        {
+          "channel_types": [
+            0,
+            5
+          ],
+          "name": "channel",
+          "description": "ช่องที่ให้บอทตอบข้อความ",
+          "required": true,
+          "type": 7
+        }
+      ],
+      "name": "setchat",
+      "description": "ตั้งค่าช่องสำหรับระบบ BOT CHAT",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "chat",
+      "category": "Tools"
+    },
+    {
+      "options": [],
+      "name": "setpanel-chat",
+      "description": "ส่งแผงตั้งค่าระบบ BOT CHAT",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "chat",
+      "category": "Tools"
+    },
+    {
+      "options": [
+        {
+          "channel_types": [
+            0,
+            5
+          ],
+          "name": "channel",
+          "description": "ช่องสำหรับให้สมาชิกพิมพ์ชื่อแมพเพื่อค้นหา Script",
+          "required": true,
+          "type": 7
+        }
+      ],
+      "name": "search-channel",
+      "description": "ตั้งค่าช่องให้สมาชิกพิมพ์ชื่อแมพเพื่อค้นหา Lua Script อัตโนมัติ",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Tools"
+    },
+    {
+      "options": [],
+      "name": "search-remove-channel",
+      "description": "ยกเลิกช่องค้นหา Lua Script อัตโนมัติ",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Tools"
+    },
+    {
+      "options": [],
+      "name": "delete-room",
+      "description": "เลือกและลบห้องข้อความหรือห้องเสียงหลายห้อง",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Tools"
+    },
+    {
+      "options": [],
+      "name": "announe-panel",
+      "description": "เปิดแผงจัดการประกาศ",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "main",
+      "category": "Tools"
+    },
+    {
+      "options": [
+        {
+          "type": 1,
+          "name": "start",
+          "description": "เปิดรับลงทะเบียนกิจกรรมใหม่",
+          "options": [
+            {
+              "channel_types": [
+                0,
+                5
+              ],
+              "name": "channel",
+              "description": "ช่องสำหรับประกาศและเปิดลงทะเบียน",
+              "required": true,
+              "type": 7
+            },
+            {
+              "type": 3,
+              "name": "prize",
+              "description": "ชื่อหรือรายละเอียดของรางวัล",
+              "required": true,
+              "max_length": 900
+            },
+            {
+              "type": 3,
+              "name": "start_time",
+              "description": "เวลาเริ่มสุ่ม เช่น 21:30 หรือ 2026-08-23 21:30",
+              "required": true
+            },
+            {
+              "max_value": 100,
+              "min_value": 1,
+              "type": 4,
+              "name": "winners",
+              "description": "จำนวนผู้โชคดี (ค่าเริ่มต้น 1 คน)",
+              "required": false
+            },
+            {
+              "max_value": 1000,
+              "min_value": 1,
+              "type": 4,
+              "name": "limit",
+              "description": "จำกัดจำนวนผู้เข้าร่วมสูงสุด (ไม่ใส่ = ไม่จำกัด)",
+              "required": false
+            },
+            {
+              "name": "role",
+              "description": "ยศที่จะมอบให้ผู้ชนะอัตโนมัติ (ถ้ามี)",
+              "required": false,
+              "type": 8
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "end",
+          "description": "ปิดรับและสุ่มทันทีจากรายชื่อผู้ลงทะเบียน",
+          "options": [
+            {
+              "type": 3,
+              "name": "message_id",
+              "description": "Message ID ของกิจกรรม",
+              "required": true
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "list",
+          "description": "ดูรายชื่อผู้ลงทะเบียนทั้งหมด",
+          "options": [
+            {
+              "type": 3,
+              "name": "message_id",
+              "description": "Message ID ของกิจกรรม",
+              "required": true
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "cancel",
+          "description": "ยกเลิกกิจกรรมโดยไม่สุ่มผู้โชคดี",
+          "options": [
+            {
+              "type": 3,
+              "name": "message_id",
+              "description": "Message ID ของกิจกรรม",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "name": "giveaway",
+      "description": "เปิดและจัดการกิจกรรมแจกของรางวัลแบบลงทะเบียน",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Tools"
+    },
+    {
+      "options": [
+        {
+          "type": 3,
+          "name": "website",
+          "description": "ลิงก์เว็บไซต์ในข้อความ Welcome หรือพิมพ์ clear เพื่อล้าง",
+          "required": false,
+          "max_length": 2048
+        }
+      ],
+      "name": "set-welcom",
+      "description": "เปิด panel ตั้งค่า Welcome / Goodbye",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Community"
+    },
+    {
+      "options": [],
+      "name": "set-verify",
+      "description": "เปิดแผงตั้งค่าระบบ Verify รับยศ",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Roles"
+    },
+    {
+      "options": [
+        {
+          "channel_types": [
+            0,
+            5
+          ],
+          "name": "channel",
+          "description": "ช่องที่จะวางแผงรับยศจังหวัด",
+          "required": true,
+          "type": 7
+        },
+        {
+          "name": "image",
+          "description": "รูปภาพด้านบน Select Menu",
+          "required": false,
+          "type": 11
+        },
+        {
+          "type": 3,
+          "name": "image_url",
+          "description": "ลิงก์รูปภาพด้านบน Select Menu",
+          "required": false,
+          "max_length": 2048
+        }
+      ],
+      "name": "set-province",
+      "description": "เปิดแผงรับยศตามภูมิภาคและจังหวัด",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Roles"
+    },
+    {
+      "options": [
+        {
+          "channel_types": [
+            0,
+            5
+          ],
+          "name": "channel",
+          "description": "ช่องที่ให้บอทตรวจและให้ยศ Verify อัตโนมัติ",
+          "required": true,
+          "type": 7
+        }
+      ],
+      "name": "verify-not",
+      "description": "ตั้งค่าช่องตรวจคนที่ยังไม่ได้รับยศ Verify อัตโนมัติ",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Roles"
+    },
+    {
+      "options": [],
+      "name": "set-ticket",
+      "description": "เปิดแผงตั้งค่าระบบ Ticket",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Community"
+    },
+    {
+      "options": [
+        {
+          "type": 3,
+          "name": "emoji",
+          "description": "Custom emojis separated by spaces or new lines",
+          "required": true,
+          "max_length": 4000,
+          "min_length": 1
+        }
+      ],
+      "name": "copy",
+      "description": "Copy multiple custom emojis into this server",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Tools"
+    },
+    {
+      "options": [],
+      "name": "help",
+      "description": "Show all slash commands available on this bot",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Tools"
+    },
+    {
+      "options": [],
+      "name": "safeserver",
+      "description": "สร้างห้องดักบอทสแปม",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Security"
+    },
+    {
+      "options": [
+        {
+          "type": 1,
+          "name": "panel",
+          "description": "เปิดแผงตั้งค่ากันสแปม",
+          "options": []
+        }
+      ],
+      "name": "set-spam",
+      "description": "ตั้งค่าระบบกันลิงก์เชิญและสแปม",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Security"
+    },
+    {
+      "options": [],
+      "name": "rank",
+      "description": "เช็คเลเวล Rank ของตัวเอง",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Rank"
+    },
+    {
+      "options": [
+        {
+          "channel_types": [
+            0,
+            5
+          ],
+          "name": "channel",
+          "description": "ช่องสำหรับแจ้งเตือน Level Up และ Rank Up",
+          "required": true,
+          "type": 7
+        }
+      ],
+      "name": "rank-channel",
+      "description": "ตั้งค่าช่องแจ้งเตือน Level Up และ Rank Up",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Rank"
+    },
+    {
+      "options": [],
+      "name": "setrank",
+      "description": "ตั้งค่าข้อความ embed ระบบ Rank",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Rank"
+    },
+    {
+      "options": [],
+      "name": "rankad",
+      "description": "ตั้งค่ารางวัลยศของระบบ Rank",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Rank"
+    },
+    {
+      "options": [
+        {
+          "name": "user",
+          "description": "สมาชิกที่ต้องการปรับเลเวล",
+          "required": true,
+          "type": 6
+        },
+        {
+          "max_value": 999999,
+          "min_value": 0,
+          "type": 4,
+          "name": "level",
+          "description": "เลเวลใหม่ เช่น 1",
+          "required": true
+        }
+      ],
+      "name": "uprank",
+      "description": "ปรับเลเวล Rank ให้สมาชิก",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Rank"
+    },
+    {
+      "options": [
+        {
+          "type": 3,
+          "choices": [
+            {
+              "name": "แสดงจำนวนเชิฟเวอร์ | ผู้คน",
+              "value": "stats"
+            },
+            {
+              "name": "Custom สถานะ",
+              "value": "custom"
+            }
+          ],
+          "name": "mode",
+          "description": "เลือกรูปแบบสถานะที่ต้องการแสดง",
+          "required": true
+        },
+        {
+          "type": 3,
+          "name": "custom",
+          "description": "ข้อความ custom สำหรับสถานะกำลังเล่น",
+          "required": false,
+          "max_length": 128
+        }
+      ],
+      "name": "setstaus",
+      "description": "ตั้งสถานะกำลังเล่นของบอท Devil",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "main",
+      "category": "Tools"
+    },
+    {
+      "options": [
+        {
+          "type": 3,
+          "name": "file",
+          "description": "Local .js file or .env to reload; leave empty for all reloadable files",
+          "required": false,
+          "max_length": 120
+        }
+      ],
+      "name": "reload",
+      "description": "Reload bot files and .env without restarting the bot process",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "main",
+      "category": "Tools"
+    },
+    {
+      "options": [
+        {
+          "name": "user",
+          "description": "สมาชิกที่ต้องการแบน",
+          "required": true,
+          "type": 6
+        },
+        {
+          "type": 3,
+          "name": "reason",
+          "description": "หมายเหตุหรือเหตุผลในการแบน",
+          "required": true,
+          "max_length": 512
+        }
+      ],
+      "name": "ban",
+      "description": "แบนสมาชิกออกจากเซิร์ฟเวอร์",
+      "default_member_permissions": "8",
+      "type": 1,
+      "mode": "Public",
+      "scope": "global",
+      "category": "Security"
+    }
+  ]
+}

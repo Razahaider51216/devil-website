@@ -1,0 +1,12 @@
+{
+  "features": [
+    { "id": "welcome", "title": "Welcome & Goodbye", "body": "เลือกช่องต้อนรับและอำลา เปิดหรือปิดแต่ละระบบ พร้อมรูปภาพและลิงก์เว็บไซต์ของชุมชน", "imageUrl": "", "published": true, "mode": "Public", "command": "set-welcom" },
+    { "id": "ticket", "title": "Ticket, simplified.", "body": "สร้างแผง Ticket เลือกช่อง ปรับข้อความ ปุ่ม อิโมจิ สี และข้อความตอบกลับอัตโนมัติจากเว็บ", "imageUrl": "", "published": true, "mode": "Public", "command": "set-ticket" },
+    { "id": "protection", "title": "Protection, always.", "body": "ดูแลลิงก์เชิญ สแปม และภาพหลอกลวง เลือกช่องและหมวดที่ตรวจสอบ พร้อมกำหนด Timeout, Kick หรือ Ban", "imageUrl": "", "published": true, "mode": "Public", "command": "set-spam" },
+    { "id": "rank", "title": "Every conversation counts.", "body": "ตั้งค่า XP จากข้อความและห้องเสียง เลือกช่องแจ้งเตือน ปรับข้อความ Rank และเพิ่มรางวัลยศตาม Level", "imageUrl": "", "published": true, "mode": "Public", "command": "setrank" },
+    { "id": "vip-shop", "title": "Your own VIP Shop.", "body": "สำหรับเซิร์ฟเวอร์ Premium จัดการสินค้า ราคา ยศ ระยะเวลา และการชำระเงิน พร้อมเลือกช่องร้านและประวัติการซื้อ", "imageUrl": "", "published": true, "mode": "VIP", "command": "set-shop" }
+  ],
+  "updates": [],
+  "serverCategories": [],
+  "audit": []
+}
