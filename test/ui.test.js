@@ -107,6 +107,52 @@ test('mobile tour reveals the drawer for navigation steps and cleans it up on sk
   } finally { dom.window.close(); }
 });
 
+test('Owner tour targets the Owner card or section heading, never the earlier header logo', async () => {
+  for (const owners of [[], [{ id: '123', name: 'Owner', username: 'owner', avatarUrl: 'https://cdn.discordapp.com/avatar.png' }]]) {
+    const dom = await page('/', { owners: { owners } });
+    try {
+      const doc = dom.window.document;
+      dom.window.scrollTo = () => {}; dom.window.scrollBy = () => {};
+      const target = doc.querySelector('.owner-home-card') || doc.querySelector('.owner-section .section-heading');
+      let targetScrolls = 0, brandScrolls = 0;
+      target.scrollIntoView = () => targetScrolls++;
+      doc.querySelector('.topbar .brand').scrollIntoView = () => brandScrolls++;
+      dom.window.eval(tour);
+      doc.querySelector('[data-tour-next]').click(); doc.querySelector('[data-tour-next]').click();
+      assert.ok(doc.querySelector('#tour-title').textContent.includes('Owner'));
+      assert.equal(targetScrolls, 1); assert.equal(brandScrolls, 0);
+    } finally { dom.window.close(); }
+  }
+});
+
+test('tour placement keeps targets separate from the guide on phones, visual viewport changes and tight desktop layouts', async () => {
+  const cases = [{ width: 390, height: 640, targetHeight: 80 }, { width: 390, height: 800, targetHeight: 80, visual: { offsetTop: 40, offsetLeft: 0, width: 390, height: 500 } }, { width: 1280, height: 800, targetHeight: 600 }];
+  for (const fixture of cases) {
+    const dom = await page('/');
+    try {
+      dom.window.innerWidth = fixture.width; dom.window.innerHeight = fixture.height;
+      if (fixture.visual) dom.window.visualViewport = { ...fixture.visual, addEventListener() {}, removeEventListener() {} };
+      dom.window.scrollTo = () => {};
+      let targetTop = fixture.width < 761 ? 320 : 100;
+      const left = fixture.width < 761 ? 20 : 450, width = fixture.width < 761 ? 350 : 550;
+      dom.window.scrollBy = ({ top }) => { targetTop -= top; };
+      const doc = dom.window.document, target = doc.querySelector('.toolkit-section .feature-card h3');
+      target.getBoundingClientRect = () => ({ left, right: left + width, top: targetTop, bottom: targetTop + fixture.targetHeight, width, height: fixture.targetHeight });
+      dom.window.eval(tour);
+      const panel = doc.querySelector('.tour-panel');
+      Object.defineProperty(panel, 'offsetHeight', { get: () => 240 });
+      for (let i = 0; i < 3; i++) doc.querySelector('[data-tour-next]').click();
+      const panelLeft = parseFloat(panel.style.left), panelTop = parseFloat(panel.style.top), panelWidth = parseFloat(panel.style.width);
+      const rect = target.getBoundingClientRect();
+      const separate = panelLeft + panelWidth <= rect.left || panelLeft >= rect.right || panelTop + 240 <= rect.top || panelTop >= rect.bottom;
+      assert.equal(separate, true, `Guide overlaps target at viewport width ${fixture.width}`);
+      assert.ok(panelTop >= (fixture.visual?.offsetTop || 0));
+      assert.ok(panelTop + 240 <= (fixture.visual?.offsetTop || 0) + (fixture.visual?.height || fixture.height));
+      if (fixture.width < 761) assert.ok(rect.top >= (fixture.visual?.offsetTop || 0) + 16);
+    } finally { dom.window.close(); }
+  }
+});
+
 test('Owner command page requires an Owner and submits selected channel/form values with CSRF', async () => {
   const denied = await page('/owner', { session: { user: { name: 'Member' }, owner: false } });
   assert.equal(denied.window.document.querySelector('#owner-guild'), null); denied.window.close();

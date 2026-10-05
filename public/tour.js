@@ -4,19 +4,20 @@
   const icon = name => window.DevilIcons.render(name);
   const nav = document.querySelector('#navigation');
   const menu = document.querySelector('#menu-toggle');
-  let overlay, steps, index = 0, previousFocus, previousScroll, navWasOpen, inertElements = [], frame, started = false;
+  let overlay, steps, index = 0, previousFocus, previousScroll, navWasOpen, inertElements = [], frame, resizeObserver, started = false;
   const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   function hasSeen() { try { return Boolean(localStorage.getItem(storageKey)); } catch { return started; } }
   function buildSteps() {
     const list = [
       { target: '.hero-copy, .page-head, .login-card', symbol: 'logo', title: 'ยินดีต้อนรับสู่ Devil', body: 'มารู้จักส่วนต่าง ๆ ของเว็บกัน ใช้ปุ่มถัดไปเพื่อดูทีละจุด หรือข้ามทั้งหมดเพื่อเริ่มใช้งานได้เลย' },
       { target: '.hero [data-invite-bot], .nav-invite', symbol: 'plus', title: 'เชิญ Devil เข้าชุมชน', body: 'กดเชิญบอทเพื่อเลือกเซิร์ฟเวอร์ใน Discord เมื่อเพิ่ม Devil แล้ว คุณจะตั้งค่าระบบต่าง ๆ ผ่านเว็บได้' },
-      { target: '.owner-section .owner-grid, .topbar .brand', symbol: 'crown', title: 'รู้จัก Owner ของ Devil', body: 'หน้าแรกแสดงผู้ดูแลและโปรไฟล์ Discord กดดูโปรไฟล์เพื่อรู้จักคนที่อยู่เบื้องหลัง Devil' },
-      { target: '.toolkit-section .grid, #navigation a[href="/features"]', symbol: 'grid', title: 'ระบบสำหรับชุมชนของคุณ', body: 'ดูฟีเจอร์ Welcome, Ticket และความปลอดภัย พร้อมภาพและรายละเอียดของแต่ละระบบ' },
+      { target: '.owner-section .owner-home-card:first-child, .owner-section .section-heading', symbol: 'crown', title: 'รู้จัก Owner ของ Devil', body: 'หน้าแรกแสดงผู้ดูแลและโปรไฟล์ Discord กดดูโปรไฟล์เพื่อรู้จักคนที่อยู่เบื้องหลัง Devil' },
+      { target: '.toolkit-section .feature-card:first-child h3, #navigation a[href="/features"]', symbol: 'grid', title: 'ระบบสำหรับชุมชนของคุณ', body: 'ดูฟีเจอร์ Welcome, Ticket และความปลอดภัย พร้อมภาพและรายละเอียดของแต่ละระบบ' },
       { target: '#navigation a[href="/commands"]', symbol: 'command', title: 'คำสั่ง Public และ VIP', body: 'ค้นหาคำสั่งตามชื่อหรือหมวด เลือก Public หรือ VIP เพื่อดูรายละเอียดและตัวเลือกของคำสั่งที่ต้องการ' },
       { target: '#navigation a[href="/servers"]', symbol: 'users', title: 'สำรวจชุมชน', body: 'ดูเซิร์ฟเวอร์ที่ใช้ Devil แยกเป็นหมวด พร้อมข้อมูลสมาชิกและสถานะชุมชน' },
       { target: '#account-link', symbol: 'settings', title: 'จัดการเซิร์ฟเวอร์จากเว็บ', body: 'เข้าสู่ระบบ Discord แล้วเลือกเซิร์ฟเวอร์ที่คุณดูแล บอทต้องอยู่ในเซิร์ฟเวอร์ และบัญชีต้องมีสิทธิ์จัดการ จึงจะตั้งค่า Welcome, Ticket และระบบอื่น ๆ ได้' }
     ];
+    if (!document.querySelector('.owner-section')) list.splice(2, 1);
     if (!document.querySelector('#admin-link')?.hidden) list.push({ target: '#admin-link', symbol: 'crown', title: 'เครื่องมือสำหรับ Owner', body: 'Owner เข้าไปจัดการฟีเจอร์ อัปเดต และหมวดชุมชนในหลังบ้าน รวมถึงใช้คำสั่งประกาศ ตั้งสถานะ และ Reload ในเซิร์ฟเวอร์หลักได้' });
     list.push({ target: '#navigation a[href="/updates"]', symbol: 'bell', title: 'พร้อมเริ่มใช้งานแล้ว', body: 'ติดตามข่าวใหม่ได้ที่หน้าอัปเดต กดตกลงเพื่อเริ่มสำรวจเว็บ หรือเปิดตัวแนะนำอีกครั้งจากปุ่ม “แนะนำการใช้งาน” ท้ายเว็บ' });
     return list;
@@ -24,34 +25,79 @@
   function targetForStep() {
     let selector = steps[index].target;
     if (window.DevilNavigation?.isMobile) selector = selector.replaceAll('#navigation', '#mobile-navigation').replace('.nav-invite', '#mobile-navigation [data-invite-bot]');
-    return [...document.querySelectorAll(selector)].find(node => getComputedStyle(node).display !== 'none') || null;
+    // Prefer the first matching selector, rather than the first node in document order.
+    for (const part of selector.split(',')) {
+      const node = [...document.querySelectorAll(part.trim())].find(element => getComputedStyle(element).display !== 'none');
+      if (node) return node;
+    }
+    return null;
   }
-  function position() {
+  function viewport() {
+    const visual = window.visualViewport;
+    return { left: visual?.offsetLeft || 0, top: visual?.offsetTop || 0, width: visual?.width || window.innerWidth, height: visual?.height || window.innerHeight };
+  }
+  function alignTarget(target, top, bottom) {
+    if (!target || bottom <= top) return;
+    const scrollArea = target.closest('.drawer-links');
+    if (scrollArea) {
+      const area = scrollArea.getBoundingClientRect();
+      top = Math.max(top, area.top + 6); bottom = Math.min(bottom, area.bottom - 6);
+    }
+    if (bottom <= top) return;
+    const rect = target.getBoundingClientRect();
+    const delta = rect.top + Math.min(rect.height, bottom - top) / 2 - (top + bottom) / 2;
+    if (Math.abs(delta) < 1) return;
+    if (scrollArea) scrollArea.scrollTop += delta;
+    else if (!window.DevilNavigation?.element.contains(target) && rect.width && rect.height) window.scrollBy({ top: delta, behavior: 'instant' });
+  }
+  function position(align = false) {
     if (!overlay) return;
     const panel = overlay.querySelector('.tour-panel'), spotlight = overlay.querySelector('.tour-spotlight');
-    const target = targetForStep(), rect = target?.getBoundingClientRect();
-    const width = window.innerWidth, height = window.innerHeight;
-    const panelWidth = Math.min(380, width - 32), panelHeight = panel.offsetHeight || 280;
+    const target = targetForStep(), view = viewport(), gap = 14;
+    const rightEdge = view.left + view.width, bottomEdge = view.top + view.height;
+    const panelWidth = Math.min(380, view.width - 32);
     panel.style.width = `${panelWidth}px`;
+    panel.classList.toggle('tour-docked', index > 0 && view.width <= 760);
+    panel.style.maxHeight = `${index > 0 && view.width <= 760 ? Math.min(300, view.height * .46) : view.height - 32}px`;
+    const panelHeight = panel.offsetHeight || 240;
+    let rect = target?.getBoundingClientRect();
     if (index === 0 || !rect || !rect.width || !rect.height) {
       spotlight.hidden = true;
-      panel.style.left = `${(width - panelWidth) / 2}px`;
-      panel.style.top = `${Math.max(16, (height - panelHeight) / 2)}px`;
+      panel.style.left = `${view.left + (view.width - panelWidth) / 2}px`;
+      panel.style.top = `${view.top + Math.max(16, (view.height - panelHeight) / 2)}px`;
       overlay.classList.add('tour-centered'); return;
     }
-    overlay.classList.remove('tour-centered'); spotlight.hidden = false;
-    const left = Math.max(8, rect.left - 7), top = Math.max(8, rect.top - 7);
-    const right = Math.min(width - 8, rect.right + 7), bottom = Math.min(height - 8, rect.bottom + 7);
-    Object.assign(spotlight.style, { left: `${left}px`, top: `${top}px`, width: `${Math.max(0, right - left)}px`, height: `${Math.max(0, bottom - top)}px` });
-    let panelLeft = Math.min(Math.max(16, rect.left), width - panelWidth - 16);
+    let panelLeft = Math.min(Math.max(view.left + 16, rect.left), rightEdge - panelWidth - 16);
     let panelTop;
-    if (width > 900 && rect.right + panelWidth + 30 < width) { panelLeft = rect.right + 18; panelTop = Math.max(16, Math.min(rect.top, height - panelHeight - 16)); }
-    else if (bottom + panelHeight + 30 <= height) panelTop = bottom + 14;
-    else if (top - panelHeight - 14 >= 16) panelTop = top - panelHeight - 14;
-    else panelTop = Math.max(16, height - panelHeight - 16);
+    if (view.width > 760) {
+      const sideTop = Math.max(view.top + 16, Math.min(rect.top, bottomEdge - panelHeight - 16));
+      if (rect.right + gap + panelWidth <= rightEdge - 16) { panelLeft = rect.right + gap; panelTop = sideTop; }
+      else if (rect.left - gap - panelWidth >= view.left + 16) { panelLeft = rect.left - gap - panelWidth; panelTop = sideTop; }
+      else if (rect.bottom + gap + panelHeight <= bottomEdge - 16) panelTop = rect.bottom + gap;
+      else if (rect.top - gap - panelHeight >= view.top + 16) panelTop = rect.top - gap - panelHeight;
+    }
+    // Reserve separate space for the guide when there is no room beside the target.
+    const docked = panelTop === undefined;
+    panel.classList.toggle('tour-docked', docked);
+    if (docked) {
+      panelTop = bottomEdge - panelHeight - 16;
+      panelLeft = view.left + (view.width - panelWidth) / 2;
+      const drawer = window.DevilNavigation?.element;
+      if (drawer?.classList.contains('is-guided')) {
+        drawer.style.setProperty('--tour-menu-height', `${Math.max(0, panelTop - view.top - gap)}px`);
+        drawer.style.setProperty('--tour-menu-top', `${view.top}px`);
+      }
+      if (align) alignTarget(target, view.top + 16, panelTop - gap - 7);
+      rect = target.getBoundingClientRect();
+    }
+    overlay.classList.remove('tour-centered'); spotlight.hidden = false;
+    const left = Math.max(view.left + 8, rect.left - 7), top = Math.max(view.top + 8, rect.top - 7);
+    const right = Math.min(rightEdge - 8, rect.right + 7), bottom = Math.min(docked ? panelTop - gap : bottomEdge - 8, rect.bottom + 7);
+    Object.assign(spotlight.style, { left: `${left}px`, top: `${top}px`, width: `${Math.max(0, right - left)}px`, height: `${Math.max(0, bottom - top)}px` });
     panel.style.left = `${panelLeft}px`; panel.style.top = `${panelTop}px`;
   }
-  function schedulePosition() { cancelAnimationFrame(frame); frame = requestAnimationFrame(position); }
+  function schedulePosition() { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => position()); }
+  function onResize() { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => position(true)); }
   function showStep() {
     const step = steps[index];
     overlay.querySelector('#tour-title').textContent = step.title;
@@ -68,20 +114,25 @@
     } else if (target && nav.contains(target) && getComputedStyle(nav).display === 'none') {
       nav.classList.add('open'); menu.setAttribute('aria-expanded', 'true');
     }
-    target?.scrollIntoView?.({ behavior: reducedMotion() ? 'instant' : 'smooth', block: 'center' });
-    position(); schedulePosition();
+    if (index > 0) target?.scrollIntoView?.({ behavior: 'instant', block: 'center' });
+    resizeObserver?.disconnect();
+    position(true); schedulePosition();
+    if (target) resizeObserver?.observe(target);
+    resizeObserver?.observe(overlay.querySelector('.tour-panel'));
     overlay.querySelector('[data-tour-next]').focus({ preventScroll: true });
   }
   function finish(outcome) {
     if (!overlay) return;
     try { localStorage.setItem(storageKey, outcome); } catch {}
     cancelAnimationFrame(frame);
+    resizeObserver?.disconnect();
     overlay.remove(); overlay = null;
     inertElements.forEach(([element, value]) => { element.inert = value; });
     if (window.DevilNavigation) { window.DevilNavigation.close({ restoreFocus: false }); if (navWasOpen) window.DevilNavigation.open(); }
     else if (!navWasOpen) { nav.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
-    window.removeEventListener('resize', schedulePosition); window.removeEventListener('scroll', schedulePosition);
-    window.visualViewport?.removeEventListener('resize', schedulePosition);
+    window.removeEventListener('resize', onResize); window.removeEventListener('scroll', schedulePosition);
+    window.visualViewport?.removeEventListener('resize', onResize);
+    window.visualViewport?.removeEventListener('scroll', onResize);
     document.removeEventListener('keydown', onKey);
     window.scrollTo({ top: previousScroll, behavior: reducedMotion() ? 'instant' : 'smooth' });
     if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
@@ -107,8 +158,10 @@
     overlay.querySelector('[data-tour-next]').onclick = () => { if (index === steps.length - 1) finish('finished'); else { index++; showStep(); } };
     overlay.querySelector('[data-tour-back]').onclick = () => { if (index > 0) { index--; showStep(); } };
     overlay.querySelector('[data-tour-skip]').onclick = () => finish('skipped');
-    document.addEventListener('keydown', onKey); window.addEventListener('resize', schedulePosition); window.addEventListener('scroll', schedulePosition, { passive: true });
-    window.visualViewport?.addEventListener('resize', schedulePosition);
+    if (window.ResizeObserver) resizeObserver = new ResizeObserver(onResize);
+    document.addEventListener('keydown', onKey); window.addEventListener('resize', onResize); window.addEventListener('scroll', schedulePosition, { passive: true });
+    window.visualViewport?.addEventListener('resize', onResize);
+    window.visualViewport?.addEventListener('scroll', onResize);
     showStep();
   }
   function ready() {
