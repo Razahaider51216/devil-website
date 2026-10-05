@@ -18,6 +18,16 @@ export default async function handler(req, res) {
     const url = new URL(req.url, process.env.APP_URL || 'http://localhost:3000');
     const action = url.searchParams.get('action') || 'session';
     const session = unseal(cookies(req).devil_session);
+    if (action === 'feature-image' && req.method === 'GET') {
+      const imageId = url.searchParams.get('id');
+      if (!/^[a-f0-9]{64}$/.test(imageId || '')) return send(res, 400, { error: 'ID รูปภาพไม่ถูกต้อง' });
+      const owner = session && owners().includes(session.userId);
+      const image = await bridge('feature-image-read', { imageId, ...(owner ? { userId: session.userId } : {}) });
+      if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(image.mime) || typeof image.base64 !== 'string') return send(res, 502, { error: 'รูปภาพไม่ถูกต้อง' });
+      const bytes = Buffer.from(image.base64, 'base64');
+      res.writeHead(200, { 'Content-Type': image.mime, 'Content-Length': bytes.length, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': owner ? 'private, max-age=300' : 'public, max-age=3600' });
+      return res.end(bytes);
+    }
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const callback = `${appUrl.replace(/\/$/, '')}/api/portal?action=callback`;
     if (action === 'invite' && req.method === 'GET') {
@@ -61,6 +71,10 @@ export default async function handler(req, res) {
     if (action === 'admin' && ['GET', 'POST'].includes(req.method)) {
       if (!owners().includes(session.userId)) return send(res, 403, { error: 'เฉพาะ Owner เท่านั้น' });
       return send(res, 200, await bridge(req.method === 'GET' ? 'admin-read' : 'admin-write', { userId: session.userId, ...(req.method === 'POST' ? { content: await readBody(req) } : {}) }));
+    }
+    if (action === 'admin-item' && req.method === 'POST') {
+      if (!owners().includes(session.userId)) return send(res, 403, { error: 'เฉพาะ Owner เท่านั้น' });
+      return send(res, 200, await bridge('admin-item-write', { userId: session.userId, change: await readBody(req) }));
     }
     if (action === 'feature-preview' && req.method === 'GET') {
       if (!owners().includes(session.userId)) return send(res, 403, { error: 'เฉพาะ Owner เท่านั้น' });

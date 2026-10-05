@@ -1,5 +1,6 @@
 /* Public feature snapshots contain display data only, never payment details or
  * member records. Sources must be configured channels managed by the Owner. */
+const { captureMessage } = require('./website-feature-message.cjs');
 const types = [
   { id: 'welcome', label: 'Welcome / Goodbye' }, { id: 'ticket', label: 'Ticket' },
   { id: 'verify', label: 'Verify' }, { id: 'shop', label: 'Shop · VIP' }
@@ -8,7 +9,7 @@ const text = (value, max = 2000) => String(value || '').slice(0, max);
 const image = value => { try { const url = new URL(value); return url.protocol === 'https:' && url.href.length <= 2048 ? url.href : ''; } catch { return ''; } };
 const color = (value, fallback = '#167aca') => /^#[0-9a-f]{6}$/i.test(value || '') ? value : fallback;
 const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
-function createFeaturePreviews({ client, data, isOwner, premium }) {
+function createFeaturePreviews({ client, data, isOwner, premium, images }) {
   async function guildFor(userId, guildId) {
     if (!isOwner(userId)) fail(403, 'เฉพาะ Owner เท่านั้น');
     const guild = client.guilds.cache.get(guildId);
@@ -69,7 +70,14 @@ function createFeaturePreviews({ client, data, isOwner, premium }) {
     if (!system) return { systems: types.map(type => ({ ...type, channels: visibleSources(guild, member, type.id).map(s => ({ id: s.channelId, name: guild.channels.cache.get(s.channelId).name })) })) };
     const source = visibleSources(guild, member, system).find(s => s.channelId === channelId);
     if (!source) fail(400, 'ช่องนี้ยังไม่ได้ตั้งค่าระบบที่เลือก หรือคุณไม่มีสิทธิ์ดูช่อง');
-    return { preview: snapshot(guild, source, system) };
+    const preview = snapshot(guild, source, system);
+    const message = await captureMessage({ client, guild, member, source, system, data, preview, images });
+    if (message) preview.message = message;
+    if (images && preview.imageUrl) {
+      const imageId = await images.capture(preview.imageUrl, { guild, member, source, system, data });
+      if (imageId) preview.imageId = imageId;
+    }
+    return { preview };
   }
   return { read };
 }

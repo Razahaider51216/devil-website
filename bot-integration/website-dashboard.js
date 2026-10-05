@@ -5,6 +5,7 @@ const { timingSafeEqual, createHash } = require('node:crypto');
 const { systems, getPath, setPath } = require('./website-settings-schema.cjs');
 const { createOwnerTools } = require('./website-owner-tools.cjs');
 const { createFeaturePreviews } = require('./website-feature-previews.cjs');
+const { createPreviewImages } = require('./website-preview-images.cjs');
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const ids = value => String(value || '').split(',').map(v => v.trim()).filter(Boolean);
@@ -66,6 +67,7 @@ function validateContent(input) {
         const { guildId, channelId, system } = row.previewSource;
         if (!/^\d{15,22}$/.test(guildId || '') || !/^\d{15,22}$/.test(channelId || '') || !['welcome', 'ticket', 'verify', 'shop'].includes(system)) fail(400, 'กรุณาเลือกระบบ เซิร์ฟเวอร์ และช่องต้นทางของตัวอย่างให้ครบ');
         record.previewSource = { guildId, channelId, system };
+        record.hidePreviewImages = row.hidePreviewImages === true;
       }
       if (group === 'serverCategories') { if (!Array.isArray(row.guildIds) || row.guildIds.some(id => !/^\d{15,22}$/.test(id))) fail(400, 'Guild IDs ไม่ถูกต้อง'); record.guildIds = [...new Set(row.guildIds)]; }
       return record;
@@ -94,22 +96,48 @@ function createDashboardServer({ client, data, saveData, publish, ownerGuildIds,
     return result;
   };
   const locks = new Set();
-  const featurePreviews = createFeaturePreviews({ client, data, isOwner: id => ownerIds().includes(id), premium });
+  const previewImages = createPreviewImages(path.join(path.dirname(contentPath), 'website-preview-images'));
+  const featurePreviews = createFeaturePreviews({ client, data, isOwner: id => ownerIds().includes(id), premium, images: previewImages });
   const ownerTools = createOwnerTools({ client, data, saveData, validateFields, isOwner: id => ownerIds().includes(id), ownerGuildIds, ownerReloadFiles, executeOwner,
     audit: record => persist({ ...content, audit: [...content.audit, record].slice(-200) }) });
   async function dispatch(body) {
+    if (body.action === 'feature-image-read') {
+      const published = content.features.some(feature => feature.published && !feature.preview?.hideImages && require('./website-feature-message.cjs').hasImage(feature.preview, body.imageId));
+      if (!published && !ownerIds().includes(body.userId)) fail(404, 'ไม่พบรูปภาพ');
+      const image = previewImages.read(body.imageId); if (!image) fail(404, 'ไม่พบรูปภาพ'); return image;
+    }
     if (body.action === 'feature-preview-read') return featurePreviews.read(body);
     if (['owner-read', 'owner-execute'].includes(body.action)) return ownerTools(body);
     if (body.action === 'content') return Object.fromEntries(['features', 'updates', 'serverCategories'].map(k => [k, content[k].filter(v => v.published).map(({ previewSource, ...publicRow }) => publicRow)]));
     if (body.action === 'guilds') return { guilds: [...client.guilds.cache.values()].map(g => ({ id: g.id, name: g.name, vip: premium(g.id) })) };
-    if (['admin-read', 'admin-write'].includes(body.action)) {
+    if (['admin-read', 'admin-write', 'admin-item-write'].includes(body.action)) {
       if (!ownerIds().includes(body.userId)) fail(403, 'เฉพาะ Owner เท่านั้น');
+      if (body.action === 'admin-item-write') {
+        const { revision, row, group } = body.change || {};
+        if (!['features', 'updates', 'serverCategories'].includes(group)) fail(400, 'หมวดไม่ถูกต้อง');
+        if (revision !== contentRevision()) fail(409, 'เนื้อหาเปลี่ยนจากอีกหน้าต่าง กรุณาโหลดใหม่');
+        const record = validateContent({ features: [], updates: [], serverCategories: [], [group]: [row] })[group][0];
+        if (group === 'features' && record.previewSource) {
+          record.preview = (await featurePreviews.read({ userId: body.userId, ...record.previewSource })).preview;
+          record.mode = record.previewSource.system === 'shop' ? 'VIP' : 'Public';
+          if (record.hidePreviewImages) { record.preview.imageUrl = ''; record.preview.hideImages = true; delete record.preview.imageId; }
+        }
+        if (revision !== contentRevision()) fail(409, 'เนื้อหาเปลี่ยนจากอีกหน้าต่าง กรุณาโหลดใหม่');
+        const rows = content[group].filter(item => item.id !== record.id); rows.push(record);
+        if (rows.length > 300) fail(400, 'รายการมากเกินไป');
+        // Keep the original ordering when editing an existing item.
+        const existing = content[group].findIndex(item => item.id === record.id);
+        if (existing >= 0) { rows.pop(); rows.splice(existing, 0, record); }
+        persist({ ...content, [group]: rows, audit: [...content.audit, { userId: body.userId, action: 'content-item-update', itemId: record.id, at: new Date().toISOString() }].slice(-200) });
+        return { row: record, revision: contentRevision(), audit: content.audit };
+      }
       if (body.action === 'admin-write') {
         if (body.content?.revision !== contentRevision()) fail(409, 'เนื้อหาเปลี่ยนจากอีกหน้าต่าง กรุณาโหลดใหม่');
         const next = validateContent(body.content);
         for (const feature of next.features) if (feature.previewSource) {
           feature.preview = (await featurePreviews.read({ userId: body.userId, ...feature.previewSource })).preview;
           feature.mode = feature.previewSource.system === 'shop' ? 'VIP' : 'Public';
+          if (feature.hidePreviewImages) { feature.preview.imageUrl = ''; feature.preview.hideImages = true; delete feature.preview.imageId; }
         }
         // Source reads can take time; prevent overwriting a concurrent update.
         if (body.content.revision !== contentRevision()) fail(409, 'เนื้อหาเปลี่ยนจากอีกหน้าต่าง กรุณาโหลดใหม่');

@@ -65,8 +65,18 @@ test('CMS rebuilds snapshots from the configured source, persists them, strips s
     revision = (await call({ action: 'admin-read', userId })).body.revision;
     assert.equal((await call({ action: 'admin-write', userId, content: content() })).status, 200);
     assert.equal((await call({ action: 'content' })).body.features[0].preview.title, 'Updated in Discord');
+    // A row save must preserve other content, accept an explicitly empty image,
+    // and retain the hide-image override after a restart.
+    const before = (await call({ action: 'admin-read', userId })).body;
+    const saved = await call({ action: 'admin-item-write', userId, change: { revision: before.revision, group: 'features', row: { ...feature, imageUrl: '', hidePreviewImages: true } } });
+    assert.equal(saved.status, 200);
+    assert.equal(saved.body.row.imageUrl, '');
+    assert.equal(saved.body.row.preview.hideImages, true);
+    assert.deepEqual((await call({ action: 'admin-read', userId })).body.updates, before.updates);
+    assert.equal((await call({ action: 'admin-item-write', userId, change: { revision: before.revision, group: 'features', row: feature } })).status, 409);
     await new Promise(resolve => server.close(resolve)); server = createDashboardServer(options); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     assert.equal((await call({ action: 'content' })).body.features[0].preview.title, 'Updated in Discord');
+    assert.equal((await call({ action: 'content' })).body.features[0].preview.hideImages, true);
     revision = (await call({ action: 'admin-read', userId })).body.revision;
     feature.previewSource.channelId = '555555555555555555';
     assert.equal((await call({ action: 'admin-write', userId, content: content() })).status, 400);

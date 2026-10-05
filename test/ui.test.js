@@ -177,7 +177,8 @@ test('Owner CMS chooses configured source channels, loads a preview and saves it
   const cms = { features: [{ id: 'feature', title: 'Our support', body: 'Description', mode: 'Public', command: 'set-ticket', imageUrl: '', published: true }], updates: [], serverCategories: [], audit: [], revision: 'current' };
   const dom = await page('/admin', {
     session: { user: { name: 'Owner' }, owner: true, csrf: 'source-csrf' },
-    admin: (url, options) => { if (options?.method === 'POST') { changes.push({ body: JSON.parse(options.body), csrf: options.headers['X-CSRF-Token'] }); return { ...cms, features: [{ ...cms.features[0], previewSource: { guildId, channelId, system: 'ticket' }, preview }] }; } return cms; },
+    admin: cms,
+    'admin-item': (url, options) => { const body = JSON.parse(options.body); changes.push({ body, csrf: options.headers['X-CSRF-Token'] }); return { row: { ...body.row, preview }, revision: 'saved', audit: [] }; },
     'feature-preview': url => { const query = new URL(url, 'https://devil.example').searchParams; return query.get('system') ? { preview } : query.get('guildId') ? { systems: [{ id: 'ticket', channels: [{ id: channelId, name: 'support' }] }, { id: 'verify', channels: [] }] } : { guilds: [{ id: guildId, name: 'My guild' }] }; }
   });
   try {
@@ -191,10 +192,44 @@ test('Owner CMS chooses configured source channels, loads a preview and saves it
     doc.querySelector('[data-source-load]').click(); await flush(); await flush();
     assert.ok(doc.querySelector('[data-source-preview]').textContent.includes('Open source ticket'));
     assert.equal(doc.querySelector('[data-key="imageUrl"]').closest('label').hidden, true);
-    doc.querySelector('#save-content').click(); await flush(); await flush();
+    doc.querySelector('[data-source-hide-images]').click();
+    doc.querySelector('[data-save-row]').click(); await flush(); await flush();
     assert.equal(changes.length, 1); assert.equal(changes[0].csrf, 'source-csrf');
-    assert.deepEqual(changes[0].body.features[0].previewSource, { guildId, channelId, system: 'ticket' });
-    assert.equal(changes[0].body.features[0].preview, undefined);
+    assert.deepEqual(changes[0].body.row.previewSource, { guildId, channelId, system: 'ticket' });
+    assert.equal(changes[0].body.row.preview, undefined);
+    assert.equal(changes[0].body.row.hidePreviewImages, true);
+    assert.equal(doc.querySelector('[data-source-hide-images]').checked, true);
+    assert.ok(doc.querySelector('[data-row-status]').textContent.includes('บันทึก'));
+  } finally { dom.window.close(); }
+});
+
+test('Discord text, source message layout and image hiding render safely; original buttons remain interactive', async () => {
+  const dom = await page('/features');
+  try {
+    const root = dom.window.document.createElement('div'); dom.window.document.body.append(root);
+    dom.window.DevilFeatureDemos.mount(root, { card: true, preview: { system: 'verify', title: 'Verify', description: '## Heading\n-# Small', roles: [{ name: 'Member' }], message: { content: '## Heading\n-# Small\n**Bold** and [site](https://example.com)\n||hidden||\n<script>alert(1)</script>', embeds: [{ title: 'Embed', description: '### Details', color: '#123456', fields: [{ name: 'Field', value: '`## literal`', inline: false }], image: { url: 'https://example.com/image.png' } }], components: [{ type: 1, components: [{ type: 2, label: 'Verify now', style: 3, action: 'verify-role', role: 'Member' }] }] } } });
+    assert.ok(root.querySelector('.demo-md-heading.level-2'));
+    assert.equal(root.querySelector('.demo-md-subtext').textContent, 'Small');
+    assert.equal(root.querySelector('.demo-inline-code').textContent, '## literal');
+    assert.equal(root.querySelector('script'), null);
+    root.querySelector('.demo-spoiler').click(); assert.equal(root.querySelector('.demo-spoiler').getAttribute('aria-expanded'), 'true');
+    assert.ok(root.querySelector('[data-demo-action="verify-role"]').classList.contains('success'));
+    root.querySelector('[data-demo-action="verify-role"]').click(); assert.ok(root.textContent.includes('ได้รับยศ'));
+    root.querySelector('.demo-banner').dispatchEvent(new dom.window.Event('error')); assert.ok(root.querySelector('.demo-image-unavailable'));
+    dom.window.DevilFeatureDemos.mount(root, { card: true, preview: { system: 'ticket', title: 'No picture', description: 'Saved', hideImages: true, message: { embeds: [{ title: 'No picture', fields: [], image: { url: 'https://example.com/image.png' } }], components: [] } } });
+    assert.equal(root.querySelector('.demo-banner'), null);
+  } finally { dom.window.close(); }
+});
+
+test('Owner saves a cleared image without relying on input events or another unfinished draft', async () => {
+  const changes = [], cms = { features: [{ id: 'one', title: 'One', imageUrl: 'https://example.com/old.png', published: true }, { id: 'draft', title: '', published: false }], updates: [], serverCategories: [], audit: [], revision: 'before' };
+  const dom = await page('/admin', { session: { user: { name: 'Owner' }, owner: true, csrf: 'token' }, admin: cms, 'admin-item': (_, options) => { const body = JSON.parse(options.body); changes.push(body); return { row: body.row, revision: 'after', audit: [] }; } });
+  try {
+    const doc = dom.window.document; doc.querySelector('[data-key="imageUrl"]').value = '';
+    doc.querySelector('[data-save-row="0"]').click(); await flush(); await flush();
+    assert.equal(changes.length, 1); assert.equal(changes[0].row.imageUrl, ''); assert.equal(changes[0].group, 'features');
+    assert.equal(doc.querySelector('[data-index="1"] [data-key="title"]').value, '');
+    assert.ok(doc.querySelector('[data-row-status]').textContent.includes('บันทึก'));
   } finally { dom.window.close(); }
 });
 

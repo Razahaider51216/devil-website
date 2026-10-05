@@ -8,19 +8,70 @@
     promptpay: '<:emoji_16:1538411050280685639>', truemoney: '<:emoji_27:1540984153892458546>',
     success: '<a:emoji_20:1538599895093747792>', protection: '<:devildiscord:1549887042752614561>', tick: '<:tickgreen:1549887079658299392>'
   };
-  function richText(value) {
+  function inlineText(value, depth = 0) {
     const source = String(value ?? '');
-    const expression = /<(a?):([a-zA-Z0-9_]+):(\d{17,20})>/g;
+    if (depth > 8) return esc(source);
     let result = '', cursor = 0;
-    for (const match of source.matchAll(expression)) {
-      result += esc(source.slice(cursor, match.index));
-      const [, animated, name, id] = match;
-      result += `<span class="demo-emoji-wrap"><img class="demo-emoji" src="https://cdn.discordapp.com/emojis/${id}.${animated ? 'gif' : 'png'}?size=48" alt=":${esc(name)}:" loading="lazy"><span class="demo-emoji-fallback" hidden>${esc(name)}</span></span>`;
-      cursor = match.index + match[0].length;
+    const delimiters = [['***', 'strong-em'], ['**', 'strong'], ['__', 'u'], ['~~', 's'], ['||', 'spoiler'], ['*', 'em'], ['_', 'em']];
+    while (cursor < source.length) {
+      const tail = source.slice(cursor);
+      if (tail[0] === '\\' && /[\\`*_~|#>\[\]()\-]/.test(tail[1] || '')) { result += esc(tail[1]); cursor += 2; continue; }
+      const custom = tail.match(/^<(a?):([a-zA-Z0-9_]+):(\d{17,20})>/);
+      if (custom) {
+        const [, animated, name, id] = custom;
+        result += `<span class="demo-emoji-wrap"><img class="demo-emoji" src="https://cdn.discordapp.com/emojis/${id}.${animated ? 'gif' : 'png'}?size=48" alt=":${esc(name)}:" loading="lazy"><span class="demo-emoji-fallback" hidden>${esc(name)}</span></span>`;
+        cursor += custom[0].length; continue;
+      }
+      if (tail[0] === '`') {
+        const end = source.indexOf('`', cursor + 1);
+        if (end > cursor + 1) { result += `<code class="demo-inline-code">${esc(source.slice(cursor + 1, end))}</code>`; cursor = end + 1; continue; }
+      }
+      const link = tail.match(/^\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/);
+      if (link) {
+        try {
+          const url = new URL(link[2]);
+          if (['https:', 'http:'].includes(url.protocol)) { result += `<a class="demo-md-link" href="${esc(url.href)}" target="_blank" rel="noopener noreferrer">${inlineText(link[1], depth + 1)}</a>`; cursor += link[0].length; continue; }
+        } catch {}
+      }
+      let formatted = false;
+      for (const [marker, tag] of delimiters) {
+        if (!tail.startsWith(marker)) continue;
+        const end = source.indexOf(marker, cursor + marker.length);
+        if (end <= cursor + marker.length) continue;
+        const inner = inlineText(source.slice(cursor + marker.length, end), depth + 1);
+        result += tag === 'spoiler' ? `<button type="button" class="demo-spoiler" aria-expanded="false" aria-label="เปิดข้อความซ่อน"><span>${inner}</span></button>` : tag === 'strong-em' ? `<strong><em>${inner}</em></strong>` : `<${tag}>${inner}</${tag}>`;
+        cursor = end + marker.length; formatted = true; break;
+      }
+      if (formatted) continue;
+      result += esc(source[cursor++]);
     }
-    return (result + esc(source.slice(cursor))).replace(/\n/g, '<br>');
+    return result;
   }
-  const emoji = key => richText(emojiTags[key]);
+  function richText(value, { inline = false } = {}) {
+    const source = String(value ?? '').replace(/\r\n?/g, '\n');
+    if (inline) return inlineText(source.replace(/^#{1,3}\s+/gm, '')).replace(/\n/g, '<br>');
+    if (!/^(?:#{1,3}\s|-#\s|>\s|[-*]\s|\d+\.\s|```)/m.test(source)) return source.split('\n').map(line => inlineText(line)).join('<br>');
+    const lines = source.split('\n'), result = [];
+    let quoted = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^```/.test(line)) {
+        const code = [], start = i;
+        while (++i < lines.length && !/^```\s*$/.test(lines[i])) code.push(lines[i]);
+        if (i === lines.length) { i = start; result.push(`<span class="demo-md-line">${inlineText(line)}</span>`); continue; }
+        result.push(`<span class="demo-code-block"><code>${esc(code.join('\n'))}</code></span>`); continue;
+      }
+      if (line.startsWith('>>> ')) quoted = true;
+      const heading = line.match(/^(#{1,3})\s+(.+)$/), subtext = line.match(/^-#\s+(.*)$/), quote = line.match(/^>{1,3}\s?(.*)$/), list = line.match(/^\s*([-*]|\d+\.)\s+(.*)$/);
+      if (heading && !quoted) result.push(`<span class="demo-md-heading level-${heading[1].length}" role="heading" aria-level="${heading[1].length}">${inlineText(heading[2])}</span>`);
+      else if (subtext && !quoted) result.push(`<span class="demo-md-subtext">${inlineText(subtext[1])}</span>`);
+      else if (quote || quoted) result.push(`<span class="demo-md-quote">${inlineText(quote ? quote[1] : line)}</span>`);
+      else if (list) result.push(`<span class="demo-md-list"><span>${/^\d/.test(list[1]) ? esc(list[1]) : '•'}</span><span>${inlineText(list[2])}</span></span>`);
+      else result.push(`<span class="demo-md-line">${line ? inlineText(line) : '<br>'}</span>`);
+    }
+    return result.join('');
+  }
+  const emoji = key => richText(emojiTags[key], { inline: true });
   const modes = [
     { id: 'welcome', name: 'Welcome', subtitle: 'ต้อนรับและอำลาสมาชิก', icon: 'welcome', command: 'set-welcom', title: 'Welcome / Goodbye', description: 'เริ่มต้นชุมชนด้วยข้อความต้อนรับ พร้อมรูปภาพและข้อมูลสมาชิก', color: '#167aca' },
     { id: 'ticket', name: 'Ticket', subtitle: 'เปิดห้องติดต่อทีมงาน', icon: 'ticket', command: 'set-ticket', title: 'Ticket', description: 'กดปุ่มด้านล่างเพื่อสร้าง Ticket', label: 'Create Ticket', color: '#ff0000' },
@@ -54,9 +105,40 @@
       const configured = states[active].imageUrl;
       let imageUrl = image ? `/demo-assets/${image}` : '';
       try { if (configured && new URL(configured).protocol === 'https:') imageUrl = configured; } catch {}
-      return `<div class="demo-embed" style="--embed-color:${states[active].color}"><h3>${richText(title)}</h3><div class="demo-embed-body">${body}</div>${imageUrl ? `<img class="demo-banner" src="${esc(imageUrl)}" alt="ตัวอย่างภาพ ${esc(active)} ของ Devil" loading="lazy">` : ''}${extra}<div class="demo-embed-footer">DEVIL · ${esc(modes.find(m => m.id === active).name)}</div></div>`;
+      if (/^[a-f0-9]{64}$/.test(states[active].imageId || '')) imageUrl = `/api/portal?action=feature-image&id=${states[active].imageId}`;
+      if (states[active].hideImages || (preview && !configured && !states[active].imageId)) imageUrl = '';
+      return `<div class="demo-embed" style="--embed-color:${states[active].color}"><h3>${richText(title, { inline: true })}</h3><div class="demo-embed-body">${body}</div>${imageUrl ? `<img class="demo-banner" src="${esc(imageUrl)}" alt="ตัวอย่างภาพ ${esc(active)} ของ Devil" loading="lazy">` : ''}${extra}<div class="demo-embed-footer">DEVIL · ${esc(modes.find(m => m.id === active).name)}</div></div>`;
     };
     const notice = body => `<div class="demo-result" role="status"><div>${icon('lock')} เฉพาะคุณเท่านั้นที่เห็นข้อความนี้ · ตัวอย่าง</div><div class="demo-result-text">${body}</div></div>`;
+    const mediaHtml = (media, cls = 'demo-banner') => {
+      if (!media || states[active].hideImages) return '';
+      let url = '';
+      try { if (new URL(media.url).protocol === 'https:') url = media.url; } catch {}
+      if (/^[a-f0-9]{64}$/.test(media.imageId || '')) url = `/api/portal?action=feature-image&id=${media.imageId}`;
+      return url ? `<img class="${cls}" src="${esc(url)}" alt="รูปตัวอย่างจาก Discord" loading="lazy">` : '';
+    };
+    function messageHtml(message) {
+      let menuIndex = 0;
+      const component = c => {
+        if ([1, 9, 17].includes(c.type)) return `<div class="${c.type === 1 ? 'discord-actions' : c.type === 9 ? 'demo-message-section' : 'demo-embed'}" ${c.type === 17 ? `style="--embed-color:${/^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : states[active].color}"` : ''}>${(c.components || []).map(component).join('')}${c.accessory ? component(c.accessory) : ''}</div>`;
+        if (c.type === 10) return `<div class="demo-message-text">${richText(c.content)}</div>`;
+        if (c.type === 11) return mediaHtml(c.media, 'demo-banner demo-thumbnail');
+        if (c.type === 12) return `<div class="demo-media-gallery">${(c.items || []).map(item => mediaHtml(item.media)).join('')}</div>`;
+        if (c.type === 14) return `<div class="demo-separator ${c.divider ? 'with-divider' : ''}" style="height:${c.spacing === 2 ? 20 : 10}px"></div>`;
+        if (c.type === 2) {
+          const label = `${richText(c.emoji, { inline: true })} ${esc(c.label)}`, style = ['', 'primary', 'secondary', 'success', 'danger', 'secondary'][c.style] || 'secondary';
+          if (c.style === 5) { let url = ''; try { if (new URL(c.url).protocol === 'https:') url = c.url; } catch {} return url ? `<a class="discord-button ${style}" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${label}${icon('external')}</a>` : ''; }
+          return button(c.action || 'sample-button', label, style, `${c.disabled ? 'disabled' : ''} data-role="${esc(c.role || '')}"`);
+        }
+        if ([3, 5, 6, 7, 8].includes(c.type)) {
+          const id = `${uid}-source-menu-${++menuIndex}`;
+          return `<div class="demo-select"><button type="button" class="demo-select-trigger" data-demo-action="source-menu" aria-expanded="false" aria-controls="${id}" ${c.disabled ? 'disabled' : ''}><span>${esc(c.placeholder)}</span>${icon('chevron')}</button><div class="demo-select-options" id="${id}" role="listbox" hidden>${(c.options || []).map(o => `<button type="button" role="option" data-demo-action="${c.action}" data-product="${esc(o.value)}">${richText(o.emoji, { inline: true })}<span><b>${esc(o.label)}</b><small>${esc(o.description)}</small></span></button>`).join('')}</div></div>`;
+        }
+        return '';
+      };
+      const embeds = (message.embeds || []).map(e => `<div class="demo-embed" style="--embed-color:${/^#[0-9a-f]{6}$/i.test(e.color || '') ? e.color : states[active].color}">${e.author ? `<div class="demo-embed-author">${mediaHtml(e.author.icon, 'demo-avatar-icon')}${richText(e.author.name, { inline: true })}</div>` : ''}${mediaHtml(e.thumbnail, 'demo-banner demo-thumbnail')}${e.title ? `<h3>${richText(e.title, { inline: true })}</h3>` : ''}${e.description ? `<div class="demo-embed-body">${richText(e.description)}</div>` : ''}<div class="demo-fields">${(e.fields || []).map(f => `<div ${f.inline ? '' : 'class="demo-field-wide"'}><b>${richText(f.name, { inline: true })}</b><div>${richText(f.value)}</div></div>`).join('')}</div>${mediaHtml(e.image)}${e.footer ? `<div class="demo-embed-footer">${mediaHtml(e.footer.icon, 'demo-avatar-icon')}${richText(e.footer.text, { inline: true })}</div>` : ''}</div>`).join('');
+      return `<div class="demo-source-message">${message.content ? `<div class="demo-message-text">${richText(message.content)}</div>` : ''}${embeds}${(message.components || []).map(component).join('')}${(message.attachments || []).map(a => mediaHtml(a)).join('')}</div>`;
+    }
     function renderSettings() {
       if (card) return;
       const s = states[active];
@@ -85,7 +167,16 @@
         if (product) stage.innerHTML += `<div class="demo-product">${embed(product.name, `<div class="demo-fields"><div><small>${emoji('price')} ราคา</small><b>฿${Number(product.price).toFixed(2)}</b></div><div><small>ยศที่จะได้รับ</small><b class="demo-mention">@${esc(product.role)}</b></div><div><small>ระยะเวลา</small><b>${esc(product.duration)}</b></div></div>`, `<div class="discord-actions">${button('pay-promptpay', `${emoji('promptpay')} พร้อมเพย์ / โอนเงิน`, 'success')}${button('pay-truemoney', `${emoji('truemoney')} TrueMoney`, 'success')}</div>`)}</div>`;
         if (product && s.payment) stage.innerHTML += notice(s.paid ? `${emoji('success')} ชำระเงินตัวอย่างสำเร็จ · ได้รับยศ <span class="demo-mention">@${esc(product.role)}</span>` : `<b>ออเดอร์ตัวอย่าง · ${esc(product.name)}</b><br>ช่องทาง: ${s.payment === 'promptpay' ? 'พร้อมเพย์ / โอนเงิน' : 'TrueMoney'}<br>ยอดรวม ฿${Number(product.price).toFixed(2)}<div class="discord-actions">${button('pay-complete', 'จำลองชำระสำเร็จ', 'success')}${button('pay-cancel', 'ยกเลิก', 'secondary')}</div>`);
       }
+      if (s.message && !s.ticketOpen) {
+        const first = stage.firstElementChild;
+        const reactions = active === 'verify' && s.verifyMode === 'emoji' ? first?.querySelector('.discord-actions')?.outerHTML || '' : '';
+        if (first) first.outerHTML = messageHtml(s.message) + reactions;
+      }
+      if (s.sampleResult) stage.insertAdjacentHTML('beforeend', notice(esc(s.sampleResult)));
       stage.querySelectorAll('.demo-emoji').forEach(image => image.addEventListener('error', () => { image.hidden = true; image.nextElementSibling.hidden = false; }, { once: true }));
+      stage.querySelectorAll('.demo-banner').forEach(image => image.addEventListener('error', () => {
+        const fallback = document.createElement('span'); fallback.className = 'demo-image-unavailable'; fallback.textContent = 'รูปภาพนี้ไม่พร้อมใช้งาน'; image.replaceWith(fallback);
+      }, { once: true }));
     }
     function activate(id) {
       active = id;
@@ -94,10 +185,12 @@
       renderSettings(); renderPreview();
     }
     function closeMenu(restoreFocus = false) {
-      const menu = stage.querySelector('.demo-select-options'), trigger = stage.querySelector('.demo-select-trigger');
-      if (!menu || menu.hidden) return;
-      menu.hidden = true; trigger.setAttribute('aria-expanded', 'false');
-      if (restoreFocus) trigger.focus({ preventScroll: true });
+      stage.querySelectorAll('.demo-select').forEach(select => {
+        const menu = select.querySelector('.demo-select-options'), trigger = select.querySelector('.demo-select-trigger');
+        if (!menu || menu.hidden) return;
+        menu.hidden = true; trigger.setAttribute('aria-expanded', 'false');
+        if (restoreFocus) trigger.focus({ preventScroll: true });
+      });
     }
     root.addEventListener('input', event => {
       const field = event.target.dataset.demoField;
@@ -106,15 +199,18 @@
       renderPreview();
     });
     root.addEventListener('click', event => {
+      const spoiler = event.target.closest('.demo-spoiler');
+      if (spoiler) { spoiler.setAttribute('aria-expanded', String(spoiler.getAttribute('aria-expanded') !== 'true')); return; }
       const tab = event.target.closest('[data-demo-tab]');
       if (tab) { activate(tab.dataset.demoTab); return; }
       const control = event.target.closest('[data-demo-action]');
       if (!control) { if (!event.target.closest('.demo-select')) closeMenu(); return; }
       const action = control.dataset.demoAction, s = states[active];
-      if (action === 'shop-menu') {
-        const menu = stage.querySelector('.demo-select-options');
-        menu.hidden = !menu.hidden; control.setAttribute('aria-expanded', String(!menu.hidden));
-        if (!menu.hidden) ((s.product && menu.querySelector('[aria-selected="true"]')) || menu.querySelector('button')).focus({ preventScroll: true });
+      if (action === 'shop-menu' || action === 'source-menu') {
+        const menu = control.closest('.demo-select').querySelector('.demo-select-options');
+        const wasOpen = !menu.hidden; closeMenu();
+        menu.hidden = wasOpen; control.setAttribute('aria-expanded', String(!menu.hidden));
+        if (!menu.hidden) ((s.product && menu.querySelector('[aria-selected="true"]')) || menu.querySelector('button'))?.focus({ preventScroll: true });
         return;
       }
       if (action === 'reset') { states[active] = fresh(modes.find(m => m.id === active)); renderSettings(); }
@@ -124,6 +220,7 @@
       else if (action === 'ticket-confirm') { s.ticketOpen = false; s.closing = false; }
       else if (action === 'verify-role') { const role = control.dataset.role; s.claimed = s.claimed.includes(role) ? (s.verifyMode === 'emoji' ? s.claimed.filter(r => r !== role) : s.claimed) : [...s.claimed, role]; }
       else if (action === 'shop-product') { s.product = control.dataset.product; s.payment = ''; s.paid = false; }
+      else if (action === 'sample-button' || action === 'sample-select') s.sampleResult = `ตัวอย่าง: ${control.textContent.trim()}`;
       else if (action.startsWith('pay-')) { s.payment = action === 'pay-cancel' ? '' : action === 'pay-complete' ? s.payment : action.slice(4); s.paid = action === 'pay-complete'; }
       renderPreview();
       if (action === 'shop-product') stage.querySelector('.demo-select-trigger').focus({ preventScroll: true });
@@ -139,7 +236,7 @@
         const current = modes.findIndex(m => m.id === active), next = event.key === 'Home' ? 0 : event.key === 'End' ? modes.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + modes.length) % modes.length;
         activate(modes[next].id); root.querySelector(`[data-demo-tab="${active}"]`).focus(); return;
       }
-      const menu = stage.querySelector('.demo-select-options');
+      const menu = [...stage.querySelectorAll('.demo-select-options')].find(element => !element.hidden);
       if (!menu || menu.hidden) return;
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeMenu(true); }
       else if (event.key === 'Tab') closeMenu();
