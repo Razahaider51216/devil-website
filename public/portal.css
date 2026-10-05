@@ -42,10 +42,7 @@
   .console-system{padding:10px 9px;margin:8px 0;gap:9px}
   .console-system small{line-height:1.6}
   .console-bottom{margin-top:14px;flex-wrap:wrap;row-gap:8px}
-  .visual-float{position:static;align-self:flex-start;transform:none;padding:10px 13px;gap:9px;box-shadow:none}
-  .visual-float>.devil-icon{width:22px;height:22px}
-  .visual-float b{font-size:10px}
-  .visual-float small{font-size:9px;margin-top:2px}
+  .visual-float{position:absolute;left:0;bottom:-14px;transform:rotate(-3deg);padding:12px 15px;gap:12px;box-shadow:var(--shadow)}
   .stats-bar{gap:18px 0;padding:20px 0}
   .stat .metric{font-size:21px}
   .section{padding-top:44px}
