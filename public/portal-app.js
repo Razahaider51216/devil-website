@@ -49,7 +49,7 @@ function homepage() {
     <section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="live-pill"><span class="dot"></span> DEVIL FOR DISCORD</span><span>YOUR COMMUNITY, UPGRADED</span></div>
       <h1>เซิร์ฟเวอร์ของคุณ<br><span>เป็นได้มากกว่า.</span></h1><p>สร้างชุมชนในแบบของคุณ ให้ Devil ดูแลการต้อนรับ Ticket และความปลอดภัย จัดการทุกอย่างได้จากที่เดียว</p>
       <div class="actions"><a class="button primary" href="/dashboard">${icon('settings')} จัดการเซิร์ฟเวอร์ ${icon('external')}</a><a class="button ghost" href="/commands">สำรวจคำสั่ง ${icon('arrow')}</a></div>
-      <div class="hero-foot">${icon('shield')} ตั้งค่าได้เอง <span></span> ${icon('crown')} Public & VIP <span></span> ${icon('globe')} พร้อมสำหรับทุกชุมชน</div>
+      <div class="hero-foot"><span class="hero-benefit">${icon('shield')} ตั้งค่าได้เอง</span><span class="hero-benefit">${icon('vip')} Public & VIP</span><span class="hero-benefit">${icon('globe')} พร้อมสำหรับทุกชุมชน</span></div>
     </div><div class="hero-visual"><div class="visual-glow"></div><div class="visual-grid"></div>
       <div class="console-board"><div class="console-title"><span class="console-brand"><img src="/bot-avatar?v=original-logo" alt=""> Devil workspace</span><span class="badge">PREVIEW</span></div>
         <div class="console-body"><div class="console-rail">${icon('grid')}${icon('users')}${icon('shield')}${icon('settings')}</div><div class="console-main"><div class="console-greeting"><span>YOUR SERVER, YOUR RULES.</span><h3>พื้นที่ของชุมชนคุณ</h3></div>
