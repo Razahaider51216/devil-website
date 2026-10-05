@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
 const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const script = await readFile(new URL('../public/portal-app.js', import.meta.url), 'utf8');
+const icons = await readFile(new URL('../public/icons.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function page(route, fixtures = {}) {
@@ -15,7 +16,7 @@ async function page(route, fixtures = {}) {
     const result = fixtures[action] || fallback;
     return { ok: true, json: async () => result };
   };
-  dom.window.eval(script); await flush(); await flush(); return dom;
+  dom.window.eval(icons); dom.window.eval(script); await flush(); await flush(); return dom;
 }
 test('Public and VIP tabs filter the real catalog without exposing Private', async () => {
   const dom = await page('/commands');
@@ -30,6 +31,14 @@ test('Public and VIP tabs filter the real catalog without exposing Private', asy
     const search = doc.querySelector('#command-search'); search.value = 'setbuy'; search.dispatchEvent(new dom.window.Event('input'));
     assert.equal(doc.querySelectorAll('#command-list article').length, 1);
   } finally { dom.window.close(); }
+});
+test('server directory displays Discord guilds while the CMS is unavailable', async () => {
+  const dom = await page('/servers', { content: new Promise(() => {}), null: { servers: [{ id: '123', name: 'Live community', members: 42, online: 8 }] } });
+  try { assert.ok(dom.window.document.querySelector('#server-groups').textContent.includes('Live community')); } finally { dom.window.close(); }
+});
+test('server directory displays the featured guild when the full list is unavailable', async () => {
+  const dom = await page('/servers', { null: { servers: null, server: { id: '123', name: 'Featured community', members: 42, online: 8 } } });
+  try { assert.ok(dom.window.document.querySelector('#server-groups').textContent.includes('Featured community')); } finally { dom.window.close(); }
 });
 test('Dashboard and CMS require login; server content is safely escaped', async () => {
   const login = await page('/dashboard');

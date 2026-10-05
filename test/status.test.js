@@ -1,6 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+test('uses the featured guild when Discord temporarily rejects the guild list', async () => {
+  process.env.DISCORD_BOT_TOKEN = 'test-secret-token'; process.env.DISCORD_GUILD_ID = '123456789';
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async url => {
+    if (url.includes('/users/@me/guilds')) return { ok: false, status: 503 };
+    if (url.endsWith('/users/@me')) return { ok: true, json: async () => ({ id: '42', username: 'Devil' }) };
+    return { ok: true, json: async () => ({ id: '123456789', name: 'Featured community', approximate_member_count: 42 }) };
+  };
+  try { const { getBotData } = await import('../lib/discord.js?fallback-test'); const result = await getBotData(); assert.equal(result.servers[0].name, 'Featured community'); assert.equal(result.servers[0].members, 42); assert.equal(result.serversStale, false); } finally { globalThis.fetch = originalFetch; }
+});
+
 test('maps Discord bot and guild data without exposing the token, then caches it', async () => {
   process.env.DISCORD_BOT_TOKEN = 'test-secret-token';
   process.env.DISCORD_GUILD_ID = '123456789';

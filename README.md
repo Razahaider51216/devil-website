@@ -4,6 +4,23 @@ A Thai Discord portal with separate Public and VIP command catalogs, categorized
 
 ## New portal setup
 
+### ตั้งค่า Owner
+
+เปิด Discord → User Settings → Advanced → Developer Mode แล้วคลิกขวาที่บัญชีที่ต้องการและเลือก Copy User ID ([คู่มือ Discord](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID)) ใช้ User ID ของบัญชี ไม่ใช่ชื่อผู้ใช้, Server ID หรือ Application ID
+
+ใส่ใน `.env` ของเว็บและ `.env` ของบอท Public ด้วยค่าเดียวกัน:
+
+```dotenv
+OWNER_IDS=123456789012345678
+# หลายคน: OWNER_IDS=123456789012345678,987654321098765432
+```
+
+ถ้าเว็บอยู่บน Vercel ให้เพิ่ม `OWNER_IDS` ใน Project Settings → Environment Variables และ redeploy ด้วย หลังแก้ `.env` ให้รีสตาร์ตเว็บที่รันในเครื่องและบอท ค่าเหล่านี้กำหนดทั้งการ์ด Owner และสิทธิ์หลังบ้าน `/admin` การ์ดแสดงรูปกับกรอบโปรไฟล์และมงกุฎที่วาดเอง โดยไม่แสดง banner ของ Discord
+
+### Interface
+
+The interface uses original SVG artwork in `public/icons.js` and `public/devil-mark.svg`; no icon library or external icon font is loaded. Owner crowns and the VIP insignia are separate drawings. The server directory fetches Discord independently from OAuth and the CMS, supports retry, and can show the featured guild if the full list is temporarily unavailable. Previously fetched guild lists are marked stale on a temporary Discord failure.
+
 The frontend and APIs are in this repository. The dashboard runs next to the **public** Devil bot so configuration changes update the bot's live in-memory data through its existing `saveData()` function. Do not write directly to `data-public.json` from the website: the running bot could overwrite it. Website content and audit records persist in `website-content.json` on the bot host, rather than an ephemeral Vercel filesystem.
 
 1. Run `npm ci` in the website folder. Copy `.env.example` to `.env` if needed and keep your existing bot token.
