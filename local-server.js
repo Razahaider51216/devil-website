@@ -18,6 +18,7 @@ const staticFiles = {
   '/account.js': ['account.js', 'text/javascript; charset=utf-8'],
   '/account.css': ['account.css', 'text/css; charset=utf-8'],
   '/tour.js': ['tour.js', 'text/javascript; charset=utf-8'],
+  '/navigation.js': ['navigation.js', 'text/javascript; charset=utf-8'],
   '/favicon.svg': ['favicon.svg', 'image/svg+xml']
 };
 

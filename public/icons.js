@@ -1,6 +1,7 @@
 /* Original DEVIL line icons. Drawn here on a 24 × 24 grid; no icon package. */
 (() => {
   const paths = {
+    home: '<path d="m3 11 9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',
     arrow: '<path d="M5 12h13m-5-5 5 5-5 5"/>',
     external: '<path d="M7 17 17 7M8 7h9v9"/>',
     menu: '<path d="M4 7h16M4 12h10M4 17h16"/>',

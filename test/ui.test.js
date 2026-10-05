@@ -9,6 +9,7 @@ const script = await readFile(new URL('../public/portal-app.js', import.meta.url
 const icons = await readFile(new URL('../public/icons.js', import.meta.url), 'utf8');
 const account = await readFile(new URL('../public/account.js', import.meta.url), 'utf8');
 const tour = await readFile(new URL('../public/tour.js', import.meta.url), 'utf8');
+const navigation = await readFile(new URL('../public/navigation.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function page(route, fixtures = {}) {
@@ -20,7 +21,7 @@ async function page(route, fixtures = {}) {
     const result = fixtures[action] || fallback;
     return { ok: true, json: async () => typeof result === 'function' ? result(url, options) : result };
   };
-  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(script); await flush(); await flush(); return dom;
+  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(navigation); dom.window.eval(script); await flush(); await flush(); return dom;
 }
 test('Public and VIP tabs filter the real catalog without exposing Private', async () => {
   const dom = await page('/commands');
@@ -62,6 +63,47 @@ test('first-visit tour supports next, back, completion, skip, replay and saved p
     assert.equal(dom.window.localStorage.getItem('devil-tour-v1'), 'skipped');
     dom.window.eval(tour);
     assert.equal(doc.querySelector('.tour-overlay'), null);
+  } finally { dom.window.close(); }
+});
+
+test('mobile drawer opens, traps focus, hides Owner tools from guests and closes on Escape, backdrop and desktop resize', async () => {
+  const dom = await page('/commands');
+  try {
+    dom.window.innerWidth = 390;
+    const doc = dom.window.document, trigger = doc.querySelector('#menu-toggle'), drawer = doc.querySelector('#mobile-navigation');
+    trigger.focus(); trigger.click();
+    assert.equal(trigger.getAttribute('aria-expanded'), 'true');
+    assert.equal(drawer.inert, false); assert.equal(doc.querySelector('#app').inert, true);
+    assert.equal(doc.body.style.overflow, 'hidden');
+    assert.ok([...drawer.querySelectorAll('[data-owner-menu]')].every(link => link.hidden));
+    assert.equal(drawer.querySelector('[aria-current=page]').getAttribute('href'), '/commands');
+    drawer.querySelector('.drawer-brand').focus();
+    doc.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+    assert.equal(doc.activeElement, drawer.querySelector('[data-invite-bot]'));
+    doc.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    assert.equal(trigger.getAttribute('aria-expanded'), 'false'); assert.equal(drawer.inert, true);
+    assert.equal(doc.activeElement, trigger); assert.ok(!doc.querySelector('#app').inert);
+    trigger.click(); drawer.querySelector('.menu-backdrop').click(); assert.equal(drawer.inert, true);
+    trigger.click(); dom.window.innerWidth = 1024; dom.window.dispatchEvent(new dom.window.Event('resize'));
+    assert.equal(drawer.inert, true); assert.equal(doc.body.style.overflow, '');
+  } finally { dom.window.close(); }
+});
+
+test('mobile tour reveals the drawer for navigation steps and cleans it up on skip', async () => {
+  const dom = await page('/');
+  try {
+    dom.window.innerWidth = 390; dom.window.scrollTo = () => {};
+    dom.window.eval(tour);
+    const doc = dom.window.document;
+    for (let i = 0; i < 4; i++) doc.querySelector('[data-tour-next]').click();
+    assert.ok(doc.querySelector('#tour-title').textContent.includes('คำสั่ง Public'));
+    assert.equal(dom.window.DevilNavigation.isOpen, true);
+    assert.ok(doc.querySelector('#mobile-navigation').classList.contains('is-guided'));
+    assert.equal(doc.querySelector('#mobile-navigation').inert, true);
+    doc.querySelector('[data-tour-skip]').click();
+    assert.equal(dom.window.DevilNavigation.isOpen, false);
+    assert.equal(doc.querySelector('#menu-toggle').getAttribute('aria-expanded'), 'false');
+    assert.ok(!doc.querySelector('#app').inert);
   } finally { dom.window.close(); }
 });
 

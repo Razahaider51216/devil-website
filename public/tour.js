@@ -22,7 +22,9 @@
     return list;
   }
   function targetForStep() {
-    return [...document.querySelectorAll(steps[index].target)].find(node => getComputedStyle(node).display !== 'none') || null;
+    let selector = steps[index].target;
+    if (window.DevilNavigation?.isMobile) selector = selector.replaceAll('#navigation', '#mobile-navigation').replace('.nav-invite', '#mobile-navigation [data-invite-bot]');
+    return [...document.querySelectorAll(selector)].find(node => getComputedStyle(node).display !== 'none') || null;
   }
   function position() {
     if (!overlay) return;
@@ -60,7 +62,10 @@
     overlay.querySelector('[data-tour-back]').hidden = index === 0;
     overlay.querySelector('[data-tour-next]').innerHTML = index === steps.length - 1 ? `ตกลง ${icon('check')}` : `ถัดไป ${icon('arrow')}`;
     const target = targetForStep();
-    if (target && nav.contains(target) && getComputedStyle(nav).display === 'none') {
+    if (window.DevilNavigation) {
+      if (target && window.DevilNavigation.element.contains(target)) window.DevilNavigation.open({ guided: true });
+      else window.DevilNavigation.close({ restoreFocus: false });
+    } else if (target && nav.contains(target) && getComputedStyle(nav).display === 'none') {
       nav.classList.add('open'); menu.setAttribute('aria-expanded', 'true');
     }
     target?.scrollIntoView?.({ behavior: reducedMotion() ? 'instant' : 'smooth', block: 'center' });
@@ -73,7 +78,8 @@
     cancelAnimationFrame(frame);
     overlay.remove(); overlay = null;
     inertElements.forEach(([element, value]) => { element.inert = value; });
-    if (!navWasOpen) { nav.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
+    if (window.DevilNavigation) { window.DevilNavigation.close({ restoreFocus: false }); if (navWasOpen) window.DevilNavigation.open(); }
+    else if (!navWasOpen) { nav.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
     window.removeEventListener('resize', schedulePosition); window.removeEventListener('scroll', schedulePosition);
     window.visualViewport?.removeEventListener('resize', schedulePosition);
     document.removeEventListener('keydown', onKey);
@@ -91,7 +97,8 @@
   function begin() {
     if (overlay) return;
     started = true; observer.disconnect();
-    steps = buildSteps(); index = 0; previousFocus = document.activeElement; previousScroll = window.scrollY; navWasOpen = nav.classList.contains('open');
+    steps = buildSteps(); index = 0; previousFocus = document.activeElement; previousScroll = window.scrollY; navWasOpen = window.DevilNavigation ? window.DevilNavigation.isOpen : nav.classList.contains('open');
+    window.DevilNavigation?.close({ restoreFocus: false });
     overlay = document.createElement('div'); overlay.className = 'tour-overlay tour-centered';
     overlay.innerHTML = `<div class="tour-spotlight" hidden></div><section class="tour-panel" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description"><div class="tour-top"><span class="tour-wordmark">DEVIL · QUICK TOUR</span><span class="tour-count"></span></div><div class="tour-symbol"></div><div class="tour-copy" aria-live="polite"><h2 id="tour-title"></h2><p id="tour-description"></p></div><div class="tour-progress" aria-hidden="true"></div><div class="tour-controls"><button type="button" class="tour-skip" data-tour-skip>ข้ามทั้งหมด</button><div><button type="button" class="tour-back" data-tour-back>ย้อนกลับ</button><button type="button" class="button primary" data-tour-next>ถัดไป</button></div></div></section>`;
     document.body.append(overlay);
