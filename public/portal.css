@@ -85,6 +85,28 @@
 .invite-button:hover .invite-arrow{transform:translate(2px,-2px)}
 .hero .actions .invite-button{grid-column:1/-1}
 .tour-overlay{position:fixed;inset:0;z-index:200;touch-action:none}
+.information-page{padding-bottom:55px}
+.information-page .inner-hero{padding-top:55px;padding-bottom:35px}
+.information-page h1{font-size:clamp(28px,4.5vw,48px);line-height:1.4;letter-spacing:-1px}
+.information-page h1 span{display:block;color:var(--accent)}
+.information-page .inner-hero p{margin-top:16px;max-width:650px}
+.information-page .legal-content{display:grid;grid-template-columns:210px minmax(0,1fr);gap:35px;align-items:start}
+.information-page .legal-aside{display:flex;flex-direction:column;gap:12px;padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--panel);font-size:13px}
+.information-page .legal-aside>span{color:var(--muted);font-size:11px}
+.information-page .legal-body{min-width:0;padding:28px;border:1px solid var(--border);border-radius:14px;background:var(--panel)}
+.information-page .legal-updated{font-size:12px;margin-bottom:24px}
+.information-page .legal-body section+section{margin-top:28px;padding-top:28px;border-top:1px solid var(--border)}
+.information-page h2{font-size:22px;margin-bottom:12px}
+.information-page p{font-size:14px;line-height:1.95}
+.information-page p+p{margin-top:12px}
+.information-page p a,.information-page .legal-aside a:hover{color:var(--accent)}
+.information-page section[id]{scroll-margin-top:20px}
+.information-page .support-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:28px;align-items:start}
+.information-page .support-intro{padding:25px}
+.information-page .faq-list details{border:1px solid var(--border);background:var(--panel);border-radius:12px;margin-top:12px;padding:17px 20px}
+.information-page .faq-list summary{cursor:pointer;font-size:14px;font-weight:500}
+.information-page .faq-list details p{padding-top:14px}
+@media(max-width:760px){.information-page .inner-hero{padding-top:32px;padding-bottom:24px}.information-page .legal-content,.information-page .support-layout{grid-template-columns:1fr;gap:20px}.information-page .legal-aside{flex-direction:row;flex-wrap:wrap;gap:10px 16px;padding:18px}.information-page .legal-aside>span{width:100%}.information-page .legal-body{padding:22px}.information-page p{font-size:13px}}
 .tour-overlay.tour-centered{background:#040c16b8}
 .tour-spotlight{position:absolute;border:2px solid var(--accent);border-radius:15px;box-shadow:0 0 0 9999px #040c16bb,0 0 30px #48b5ff28;pointer-events:none}
 .tour-panel{position:absolute;z-index:1;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;touch-action:pan-y;padding:25px;border:1px solid #49b8ff55;border-radius:21px;background:radial-gradient(ellipse at 0 0,#168bd815,transparent 70%),var(--panel);box-shadow:0 25px 90px #0007;animation:tour-arrive .25s ease}

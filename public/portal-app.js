@@ -256,6 +256,8 @@ async function admin() {
   document.querySelector('#save-content').onclick = async event => { event.target.disabled = true; try { data = await api('admin', { revision: data.revision, features: data.features, updates: data.updates, serverCategories: data.serverCategories }); toast('บันทึกเว็บไซต์เรียบร้อยแล้ว'); render(); } catch (e) { toast(e.message); } finally { event.target.disabled = false; } }; render();
 }
 async function start() {
+  // Static information pages remain available even if Discord or the CMS is down.
+  if (window.DevilInformation?.render(route, app)) return;
   // The server directory does not depend on login, Owner profiles or the CMS.
   if (route === '/servers') {
     app.innerHTML = '<div class="container"><div class="loading">กำลังโหลดเซิร์ฟเวอร์จาก Discord…</div></div>';

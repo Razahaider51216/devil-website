@@ -19,6 +19,7 @@ const staticFiles = {
   '/account.css': ['account.css', 'text/css; charset=utf-8'],
   '/tour.js': ['tour.js', 'text/javascript; charset=utf-8'],
   '/navigation.js': ['navigation.js', 'text/javascript; charset=utf-8'],
+  '/information.js': ['information.js', 'text/javascript; charset=utf-8'],
   '/favicon.svg': ['favicon.svg', 'image/svg+xml']
 };
 
@@ -51,9 +52,8 @@ export const server = http.createServer(async (request, response) => {
     response.end();
     return;
   }
-  const isPage = ['/', '/commands', '/servers', '/features', '/updates', '/dashboard', '/admin', '/owner'].includes(pathname);
-  const legal = ['/privacy', '/terms', '/support'].includes(pathname);
-  const file = isPage ? ['index.html', 'text/html; charset=utf-8'] : legal ? ['legal.html', 'text/html; charset=utf-8'] : staticFiles[pathname];
+  const isPage = ['/', '/commands', '/servers', '/features', '/updates', '/dashboard', '/admin', '/owner', '/privacy', '/terms', '/support'].includes(pathname.replace(/\/$/, '') || '/');
+  const file = isPage ? ['index.html', 'text/html; charset=utf-8'] : staticFiles[pathname];
   if (!file) {
     response.writeHead(404);
     response.end('Not found');

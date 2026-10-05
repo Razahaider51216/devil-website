@@ -10,6 +10,7 @@ const icons = await readFile(new URL('../public/icons.js', import.meta.url), 'ut
 const account = await readFile(new URL('../public/account.js', import.meta.url), 'utf8');
 const tour = await readFile(new URL('../public/tour.js', import.meta.url), 'utf8');
 const navigation = await readFile(new URL('../public/navigation.js', import.meta.url), 'utf8');
+const information = await readFile(new URL('../public/information.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function page(route, fixtures = {}) {
@@ -21,8 +22,38 @@ async function page(route, fixtures = {}) {
     const result = fixtures[action] || fallback;
     return { ok: true, json: async () => typeof result === 'function' ? result(url, options) : result };
   };
-  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(navigation); dom.window.eval(script); await flush(); await flush(); return dom;
+  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(navigation); dom.window.eval(information); dom.window.eval(script); await flush(); await flush(); return dom;
 }
+test('footer information links open their own content in the shared portal without waiting for Discord or CMS', async () => {
+  const rewrites = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8')).rewrites;
+  const { server } = await import('../local-server.js');
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    for (const [route, title, section] of [['/support', 'ช่วยเหลือ', '.faq-list'], ['/privacy', 'นโยบายความเป็นส่วนตัว', '#information'], ['/terms', 'ข้อกำหนดการให้บริการ', '#acceptance']]) {
+      assert.equal(rewrites.find(row => row.source === route).destination, '/index.html');
+      const response = await fetch(`http://127.0.0.1:${server.address().port}${route}`);
+      assert.equal(response.status, 200);
+      assert.equal(await response.text(), html);
+      for (const suffix of ['', '/']) {
+        const dom = await page(route + suffix, { session: new Promise(() => {}), content: new Promise(() => {}) });
+        try {
+          const doc = dom.window.document;
+          assert.ok(doc.querySelector('.topbar'));
+          assert.ok(doc.querySelector('footer a[href="' + route + '"]'));
+          assert.ok(doc.querySelector('.information-page ' + section));
+          assert.ok(doc.title.startsWith(title));
+          assert.equal(doc.querySelector('.hero'), null);
+          assert.equal(doc.querySelector('.site-header'), null);
+          assert.equal(doc.querySelector('.loading'), null);
+        } finally { dom.window.close(); }
+      }
+    }
+    const asset = await fetch(`http://127.0.0.1:${server.address().port}/information.js`);
+    assert.equal(asset.status, 200);
+    assert.equal(await asset.text(), information);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test('Public and VIP tabs filter the real catalog without exposing Private', async () => {
   const dom = await page('/commands');
   try {
