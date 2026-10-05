@@ -9,7 +9,7 @@
   function hasSeen() { try { return Boolean(localStorage.getItem(storageKey)); } catch { return started; } }
   function buildSteps() {
     const list = [
-      { target: '.hero-copy, .page-head, .login-card', symbol: 'logo', title: 'ยินดีต้อนรับสู่ Devil', body: 'มารู้จักส่วนต่าง ๆ ของเว็บกัน ใช้ปุ่มถัดไปเพื่อดูทีละจุด หรือข้ามทั้งหมดเพื่อเริ่มใช้งานได้เลย' },
+      { target: '#account-link', symbol: 'logo', title: 'เข้าสู่ระบบ Discord', body: 'กดปุ่มเข้าสู่ระบบ Discord เพื่อเชื่อมบัญชีของคุณ แล้วเลือกเซิร์ฟเวอร์ที่ต้องการจัดการ ใช้ปุ่มถัดไปเพื่อดูส่วนอื่น ๆ ของเว็บ หรือข้ามทั้งหมดเพื่อเริ่มใช้งานได้เลย' },
       { target: '.hero [data-invite-bot], .nav-invite', symbol: 'plus', title: 'เชิญ Devil เข้าชุมชน', body: 'กดเชิญบอทเพื่อเลือกเซิร์ฟเวอร์ใน Discord เมื่อเพิ่ม Devil แล้ว คุณจะตั้งค่าระบบต่าง ๆ ผ่านเว็บได้' },
       { target: '.owner-section .owner-home-card:first-child, .owner-section .section-heading', symbol: 'crown', title: 'รู้จัก Owner ของ Devil', body: 'หน้าแรกแสดงผู้ดูแลและโปรไฟล์ Discord กดดูโปรไฟล์เพื่อรู้จักคนที่อยู่เบื้องหลัง Devil' },
       { target: '.toolkit-section .feature-card:first-child h3, #navigation a[href="/features"]', symbol: 'grid', title: 'ระบบสำหรับชุมชนของคุณ', body: 'ดูฟีเจอร์ Welcome, Ticket และความปลอดภัย พร้อมภาพและรายละเอียดของแต่ละระบบ' },
@@ -45,6 +45,7 @@
     }
     if (bottom <= top) return;
     const rect = target.getBoundingClientRect();
+    if (rect.top >= top && rect.bottom <= bottom) return;
     const delta = rect.top + Math.min(rect.height, bottom - top) / 2 - (top + bottom) / 2;
     if (Math.abs(delta) < 1) return;
     if (scrollArea) scrollArea.scrollTop += delta;
@@ -61,11 +62,13 @@
     panel.style.maxHeight = `${index > 0 && view.width <= 760 ? Math.min(300, view.height * .46) : view.height - 32}px`;
     const panelHeight = panel.offsetHeight || 240;
     let rect = target?.getBoundingClientRect();
-    if (index === 0 || !rect || !rect.width || !rect.height) {
+    if (!rect || !rect.width || !rect.height) {
       spotlight.hidden = true;
-      panel.style.left = `${view.left + (view.width - panelWidth) / 2}px`;
-      panel.style.top = `${view.top + Math.max(16, (view.height - panelHeight) / 2)}px`;
-      overlay.classList.add('tour-centered'); return;
+      overlay.classList.add('tour-centered');
+      const origin = overlay.getBoundingClientRect();
+      panel.style.left = `${view.left + (view.width - panelWidth) / 2 - origin.left}px`;
+      panel.style.top = `${view.top + Math.max(16, (view.height - panelHeight) / 2) - origin.top}px`;
+      return;
     }
     let panelLeft = Math.min(Math.max(view.left + 16, rect.left), rightEdge - panelWidth - 16);
     let panelTop;
@@ -91,10 +94,13 @@
       rect = target.getBoundingClientRect();
     }
     overlay.classList.remove('tour-centered'); spotlight.hidden = false;
+    // Absolute children share the measured overlay origin. Safari can move the
+    // fixed overlay when its browser controls or visual viewport change.
+    const origin = overlay.getBoundingClientRect();
     const left = Math.max(view.left + 8, rect.left - 7), top = Math.max(view.top + 8, rect.top - 7);
     const right = Math.min(rightEdge - 8, rect.right + 7), bottom = Math.min(docked ? panelTop - gap : bottomEdge - 8, rect.bottom + 7);
-    Object.assign(spotlight.style, { left: `${left}px`, top: `${top}px`, width: `${Math.max(0, right - left)}px`, height: `${Math.max(0, bottom - top)}px` });
-    panel.style.left = `${panelLeft}px`; panel.style.top = `${panelTop}px`;
+    Object.assign(spotlight.style, { left: `${left - origin.left}px`, top: `${top - origin.top}px`, width: `${Math.max(0, right - left)}px`, height: `${Math.max(0, bottom - top)}px` });
+    panel.style.left = `${panelLeft - origin.left}px`; panel.style.top = `${panelTop - origin.top}px`;
   }
   function schedulePosition() { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => position()); }
   function onResize() { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => position(true)); }
@@ -114,7 +120,7 @@
     } else if (target && nav.contains(target) && getComputedStyle(nav).display === 'none') {
       nav.classList.add('open'); menu.setAttribute('aria-expanded', 'true');
     }
-    if (index > 0) target?.scrollIntoView?.({ behavior: 'instant', block: 'center' });
+    target?.scrollIntoView?.({ behavior: 'instant', block: 'center' });
     resizeObserver?.disconnect();
     position(true); schedulePosition();
     if (target) resizeObserver?.observe(target);
@@ -132,7 +138,7 @@
     else if (!navWasOpen) { nav.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
     window.removeEventListener('resize', onResize); window.removeEventListener('scroll', schedulePosition);
     window.visualViewport?.removeEventListener('resize', onResize);
-    window.visualViewport?.removeEventListener('scroll', onResize);
+    window.visualViewport?.removeEventListener('scroll', schedulePosition);
     document.removeEventListener('keydown', onKey);
     window.scrollTo({ top: previousScroll, behavior: reducedMotion() ? 'instant' : 'smooth' });
     if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
@@ -161,7 +167,7 @@
     if (window.ResizeObserver) resizeObserver = new ResizeObserver(onResize);
     document.addEventListener('keydown', onKey); window.addEventListener('resize', onResize); window.addEventListener('scroll', schedulePosition, { passive: true });
     window.visualViewport?.addEventListener('resize', onResize);
-    window.visualViewport?.addEventListener('scroll', onResize);
+    window.visualViewport?.addEventListener('scroll', schedulePosition);
     showStep();
   }
   function ready() {

@@ -46,11 +46,11 @@ test('first-visit tour supports next, back, completion, skip, replay and saved p
     dom.window.eval(tour);
     assert.ok(doc.querySelector('.tour-panel'));
     assert.equal(doc.querySelector('#app').inert, true);
-    assert.ok(doc.querySelector('#tour-title').textContent.includes('ยินดีต้อนรับ'));
+    assert.equal(doc.querySelector('#tour-title').textContent, 'เข้าสู่ระบบ Discord');
     doc.querySelector('[data-tour-next]').click();
     assert.ok(doc.querySelector('#tour-title').textContent.includes('เชิญ'));
     doc.querySelector('[data-tour-back]').click();
-    assert.ok(doc.querySelector('#tour-title').textContent.includes('ยินดีต้อนรับ'));
+    assert.equal(doc.querySelector('#tour-title').textContent, 'เข้าสู่ระบบ Discord');
     for (let i = 0; i < 20 && doc.querySelector('[data-tour-next]'); i++) doc.querySelector('[data-tour-next]').click();
     assert.equal(doc.querySelector('.tour-overlay'), null);
     assert.equal(dom.window.localStorage.getItem('devil-tour-v1'), 'finished');
@@ -151,6 +151,46 @@ test('tour placement keeps targets separate from the guide on phones, visual vie
       if (fixture.width < 761) assert.ok(rect.top >= (fixture.visual?.offsetTop || 0) + 16);
     } finally { dom.window.close(); }
   }
+});
+
+test('login tour spotlight uses overlay coordinates and follows mobile viewport changes without scrolling a visible login button', async () => {
+  const dom = await page('/');
+  try {
+    const win = dom.window, doc = win.document;
+    win.innerWidth = 390; win.innerHeight = 700;
+    const visual = new win.EventTarget();
+    Object.assign(visual, { offsetTop: 0, offsetLeft: 0, width: 390, height: 700 });
+    win.visualViewport = visual;
+    let scrolls = 0, origin = { left: 12, top: -110 }, targetTop = 85;
+    win.scrollTo = () => {}; win.scrollBy = () => { scrolls++; };
+    const target = doc.querySelector('#account-link');
+    target.getBoundingClientRect = () => ({ left: 65, right: 370, top: targetTop, bottom: targetTop + 40, width: 305, height: 40 });
+    const originalRect = win.HTMLElement.prototype.getBoundingClientRect;
+    win.HTMLElement.prototype.getBoundingClientRect = function () {
+      return this.classList.contains('tour-overlay') ? { ...origin, width: 390, height: 700 } : originalRect.call(this);
+    };
+    win.eval(tour);
+    const spotlight = doc.querySelector('.tour-spotlight');
+    const assertAligned = () => {
+      assert.equal(spotlight.hidden, false);
+      assert.equal(parseFloat(spotlight.style.left) + origin.left, 58);
+      assert.equal(parseFloat(spotlight.style.top) + origin.top, targetTop - 7);
+      assert.equal(parseFloat(spotlight.style.width), 319);
+      assert.equal(parseFloat(spotlight.style.height), 54);
+    };
+    assert.equal(doc.querySelector('#tour-title').textContent, 'เข้าสู่ระบบ Discord');
+    assertAligned();
+    // Step 7 must still point to the account button after closing the drawer.
+    for (let i = 0; i < 6; i++) doc.querySelector('[data-tour-next]').click();
+    assert.ok(doc.querySelector('#tour-title').textContent.includes('จัดการเซิร์ฟเวอร์'));
+    assertAligned();
+    origin = { left: 0, top: 60 }; targetTop = 115;
+    visual.offsetTop = 40; visual.height = 600;
+    visual.dispatchEvent(new win.Event('scroll'));
+    await new Promise(resolve => setTimeout(resolve, 40));
+    assertAligned();
+    assert.equal(scrolls, 0);
+  } finally { dom.window.close(); }
 });
 
 test('Owner command page requires an Owner and submits selected channel/form values with CSRF', async () => {

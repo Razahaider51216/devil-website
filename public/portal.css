@@ -85,9 +85,9 @@
 .invite-button:hover .invite-arrow{transform:translate(2px,-2px)}
 .hero .actions .invite-button{grid-column:1/-1}
 .tour-overlay{position:fixed;inset:0;z-index:200;touch-action:none}
-.tour-overlay.tour-centered{background:#040c16b8;backdrop-filter:blur(5px)}
-.tour-spotlight{position:fixed;border:2px solid var(--accent);border-radius:15px;box-shadow:0 0 0 9999px #040c16bb,0 0 30px #48b5ff28;pointer-events:none;transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease}
-.tour-panel{position:fixed;z-index:1;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;touch-action:pan-y;padding:25px;border:1px solid #49b8ff55;border-radius:21px;background:radial-gradient(ellipse at 0 0,#168bd815,transparent 70%),var(--panel);box-shadow:0 25px 90px #0007;animation:tour-arrive .25s ease}
+.tour-overlay.tour-centered{background:#040c16b8}
+.tour-spotlight{position:absolute;border:2px solid var(--accent);border-radius:15px;box-shadow:0 0 0 9999px #040c16bb,0 0 30px #48b5ff28;pointer-events:none}
+.tour-panel{position:absolute;z-index:1;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;touch-action:pan-y;padding:25px;border:1px solid #49b8ff55;border-radius:21px;background:radial-gradient(ellipse at 0 0,#168bd815,transparent 70%),var(--panel);box-shadow:0 25px 90px #0007;animation:tour-arrive .25s ease}
 .tour-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px;font:9px 'Space Grotesk',sans-serif;letter-spacing:1.4px;color:var(--muted)}
 .tour-count{color:var(--accent);font-size:11px;letter-spacing:.5px}
 .tour-symbol{width:49px;height:49px;border:1px solid #49b8ff30;border-radius:14px;background:#168bd811;display:grid;place-items:center;color:var(--accent);margin-bottom:17px;overflow:hidden}
