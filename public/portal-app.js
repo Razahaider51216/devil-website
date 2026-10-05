@@ -46,7 +46,13 @@ function ownerHomeCard(owner) {
 function featureCard(f, withPreview = false) {
   return `<article class="card feature-card ${withPreview && f.preview ? 'has-feature-preview' : ''}">${withPreview && f.preview ? `<div data-feature-preview="${escape(f.id)}"></div>` : f.imageUrl ? img(f.imageUrl, 'card-image', f.title) : `<div class="feature-art"><div class="feature-orbit"></div>${icon(commandIcon(f.command || ''), 'feature-symbol')}<span class="feature-art-caption">DEVIL / ${escape(f.command || 'feature')}</span></div>`}<div class="card-top"><span class="badge ${f.mode === 'VIP' ? 'vip' : 'public'}">${f.mode === 'VIP' ? icon('vip') : icon('check')}${escape(f.mode || 'Public')}</span>${f.command ? `<span class="command-tag">/${escape(f.command)}</span>` : ''}</div><h3>${escape(f.title)}</h3><p>${escape(f.body)}</p></article>`;
 }
-function serverCard(g) { return `<article class="card"><div class="card-top">${img(g.iconUrl, 'server-icon', g.name) || `<span class="server-icon">${escape(g.name?.slice(0, 1))}</span>`}<h3>${escape(g.name)}</h3></div><span class="badge public">DEVIL COMMUNITY</span><div class="server-info"><span>${number(g.members)} สมาชิก</span><span><i class="dot"></i> ${number(g.online)} ออนไลน์</span></div></article>`; }
+function communityServers(rows) {
+  return [...rows].sort((a, b) => (Number.isFinite(b.members) ? b.members : -1) - (Number.isFinite(a.members) ? a.members : -1) || String(a.name).localeCompare(String(b.name), 'th') || String(a.id).localeCompare(String(b.id)));
+}
+function serverCard(g) {
+  const vip = g.vip === true;
+  return `<article class="card community-card ${vip ? 'community-vip' : ''}" data-guild-id="${escape(g.id)}">${vip ? `<div class="community-vip-label">${icon('vip')}<span>VIP COMMUNITY</span></div>` : ''}<div class="community-heading"><div class="community-avatar">${img(g.iconUrl, 'server-icon', g.name) || `<span class="server-icon">${escape(g.name?.slice(0, 1))}</span>`}${vip ? `<span class="community-avatar-seal">${icon('vip')}</span>` : ''}</div><div><span class="community-overline">DEVIL COMMUNITY</span><h3>${escape(g.name)}</h3></div></div><div class="server-info"><div>${icon('users')}<span><b>${number(g.members)}</b><small>สมาชิก</small></span></div><div><i class="dot"></i><span><b>${number(g.online)}</b><small>ออนไลน์</small></span></div></div>${vip ? '<div class="community-vip-foot"><span></span>DEVIL VIP<span></span></div>' : ''}</article>`;
+}
 function updateCard(u, index = 0) {
   const date = new Date(u.date);
   const validDate = Number.isFinite(date.getTime());
@@ -58,7 +64,7 @@ function updateCard(u, index = 0) {
   </article>`;
 }
 function homepage() {
-  const servers = status.servers || [];
+  const servers = communityServers(status.servers || []);
   const members = servers.length && servers.every(g => Number.isFinite(g.members)) ? servers.reduce((sum, g) => sum + g.members, 0) : null;
   app.innerHTML = `<div class="container">
     <section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="live-pill"><span class="dot"></span> DEVIL FOR DISCORD</span><span>YOUR COMMUNITY, UPGRADED</span></div>
@@ -98,12 +104,12 @@ function commandPage() {
 function serverPage() {
   const previousQuery = document.querySelector('#server-search')?.value || '';
   const previousCategory = document.querySelector('#server-category')?.value || '';
-  app.innerHTML = `<div class="container">${head('DEVIL COMMUNITIES', 'เซิร์ฟเวอร์', 'แสดงชุมชนเป็นหมวด พร้อมจำนวนสมาชิกจาก Discord')}<div class="toolbar"><input id="server-search" class="search" placeholder="ค้นหาเซิร์ฟเวอร์" aria-label="ค้นหาเซิร์ฟเวอร์"><select id="server-category" style="width:auto" aria-label="หมวดเซิร์ฟเวอร์"><option value="">ทุกเซิร์ฟเวอร์</option>${content.serverCategories.map(g => `<option value="${escape(g.id)}">${escape(g.title)}</option>`).join('')}<option value="other">ทั่วไป</option></select></div><div id="server-groups"></div></div>`;
+  app.innerHTML = `<div class="container">${head('DEVIL COMMUNITIES', 'ชุมชน', 'เรียงสมาชิกจากมากไปน้อยในแต่ละหมวด พร้อมชุมชน VIP ของ Devil')}<div class="toolbar"><input id="server-search" class="search" placeholder="ค้นหาเซิร์ฟเวอร์" aria-label="ค้นหาเซิร์ฟเวอร์"><select id="server-category" style="width:auto" aria-label="หมวดเซิร์ฟเวอร์"><option value="">ทุกเซิร์ฟเวอร์</option>${content.serverCategories.map(g => `<option value="${escape(g.id)}">${escape(g.title)}</option>`).join('')}<option value="other">ทั่วไป</option></select></div><div id="server-groups"></div></div>`;
   function render() {
     const q = document.querySelector('#server-search').value.toLowerCase(), selected = document.querySelector('#server-category').value;
     const assigned = new Set(content.serverCategories.flatMap(g => g.guildIds));
     const groups = [...content.serverCategories, { id: 'other', title: 'ทั่วไป', body: 'ชุมชนที่ใช้ Devil', guildIds: (status.servers || []).filter(g => !assigned.has(g.id)).map(g => g.id) }];
-    document.querySelector('#server-groups').innerHTML = groups.filter(g => !selected || g.id === selected).map(g => { const rows = (status.servers || []).filter(s => g.guildIds.includes(s.id) && s.name.toLowerCase().includes(q)); return rows.length ? `<section class="section">${sectionHead('COMMUNITY', escape(g.title), escape(g.body))}<div class="grid">${rows.map(serverCard).join('')}</div></section>` : ''; }).join('') || empty(status.servers === null ? 'ไม่สามารถโหลดข้อมูลเซิร์ฟเวอร์ได้' : 'ไม่พบเซิร์ฟเวอร์ในหมวดนี้');
+    document.querySelector('#server-groups').innerHTML = groups.filter(g => !selected || g.id === selected).map(g => { const rows = communityServers((status.servers || []).filter(s => g.guildIds.includes(s.id) && s.name.toLowerCase().includes(q))); return rows.length ? `<section class="section">${sectionHead('COMMUNITY', escape(g.title), escape(g.body))}<div class="grid">${rows.map(serverCard).join('')}</div></section>` : ''; }).join('') || empty(status.servers === null ? 'ไม่สามารถโหลดข้อมูลเซิร์ฟเวอร์ได้' : 'ไม่พบเซิร์ฟเวอร์ในหมวดนี้');
   }
   document.querySelector('#server-search').value = previousQuery;
   document.querySelector('#server-category').value = previousCategory;

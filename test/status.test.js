@@ -52,6 +52,32 @@ test('maps Discord bot and guild data without exposing the token, then caches it
   }
 });
 
+test('public guild VIP badges use the bot entitlement list; a failed bridge leaves Discord guilds visible', async () => {
+  const originalFetch = globalThis.fetch, originalUrl = process.env.BOT_DASHBOARD_API_URL, originalSecret = process.env.BOT_DASHBOARD_SECRET;
+  process.env.BOT_DASHBOARD_API_URL = 'https://bridge.example/dashboard'; process.env.BOT_DASHBOARD_SECRET = 'private-test-secret';
+  const guilds = [{ id: 'vip', name: 'VIP', approximate_member_count: 100 }, { id: 'normal', name: 'Normal', approximate_member_count: 200 }];
+  let failBridge = false;
+  globalThis.fetch = async (url, options) => {
+    if (String(url).startsWith('https://bridge.example')) {
+      assert.equal(JSON.parse(options.body).action, 'guilds');
+      if (failBridge) throw new Error('unavailable');
+      return { ok: true, text: async () => JSON.stringify({ guilds: [{ id: 'vip', vip: true }, { id: 'normal', vip: false }] }) };
+    }
+    return { ok: true, json: async () => String(url).endsWith('/users/@me') ? { id: 'bot', username: 'Devil' } : guilds };
+  };
+  try {
+    const { getBotData } = await import('../lib/discord.js?vip-entitlements'); const data = await getBotData();
+    assert.equal(data.servers.find(g => g.id === 'vip').vip, true); assert.equal(data.servers.find(g => g.id === 'normal').vip, false);
+    assert.ok(!JSON.stringify(data).includes('private-test-secret'));
+    failBridge = true; const fallback = await import('../lib/discord.js?vip-unavailable');
+    assert.equal((await fallback.getBotData()).servers.length, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalUrl === undefined) delete process.env.BOT_DASHBOARD_API_URL; else process.env.BOT_DASHBOARD_API_URL = originalUrl;
+    if (originalSecret === undefined) delete process.env.BOT_DASHBOARD_SECRET; else process.env.BOT_DASHBOARD_SECRET = originalSecret;
+  }
+});
+
 test('loads every page when the bot has more than 200 joined servers', async () => {
   process.env.DISCORD_BOT_TOKEN = 'test-secret-token';
   process.env.DISCORD_GUILD_ID = '';

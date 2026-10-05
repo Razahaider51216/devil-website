@@ -447,6 +447,24 @@ test('Owner command page requires an Owner and submits selected channel/form val
     assert.equal(doc.querySelector('#owner-result').textContent, 'ส่งประกาศแล้ว');
   } finally { dom.window.close(); }
 });
+test('community cards sort members descending, keep unknown counts last and highlight only actual VIP guilds', async () => {
+  const servers = [{ id: 'vip', name: 'VIP community', members: 50, online: 5, vip: true }, { id: 'unknown', name: 'Unknown count', members: null, online: null }, { id: 'big', name: 'Big community', members: 500, online: 80 }, { id: 'small', name: 'Small community', members: 2, online: 1 }];
+  for (const route of ['/servers', '/']) {
+    const dom = await page(route, { null: { servers } });
+    try {
+      const doc = dom.window.document, ids = [...doc.querySelectorAll('.community-card')].map(card => card.dataset.guildId);
+      assert.deepEqual(ids, route === '/' ? ['big', 'vip', 'small'] : ['big', 'vip', 'small', 'unknown']);
+      assert.equal(doc.querySelectorAll('.community-vip').length, 1);
+      assert.ok(doc.querySelector('[data-guild-id="vip"] .community-vip-label').textContent.includes('VIP'));
+      assert.equal(doc.querySelector('[data-guild-id="big"] .community-vip-label'), null);
+      if (route === '/servers') {
+        const search = doc.querySelector('#server-search'); search.value = 'VIP'; search.dispatchEvent(new dom.window.Event('input'));
+        assert.equal(doc.querySelectorAll('.community-card').length, 1); assert.ok(doc.querySelector('.community-vip'));
+      }
+    } finally { dom.window.close(); }
+  }
+});
+
 test('server directory displays Discord guilds while the CMS is unavailable', async () => {
   const dom = await page('/servers', { content: new Promise(() => {}), null: { servers: [{ id: '123', name: 'Live community', members: 42, online: 8 }] } });
   try { assert.ok(dom.window.document.querySelector('#server-groups').textContent.includes('Live community')); } finally { dom.window.close(); }
