@@ -60,11 +60,6 @@ function updateCard(u, index = 0) {
 function homepage() {
   const servers = status.servers || [];
   const members = servers.length && servers.every(g => Number.isFinite(g.members)) ? servers.reduce((sum, g) => sum + g.members, 0) : null;
-  const features = content.features.length ? content.features.slice(0, 3) : [
-    { title: 'Welcome & Goodbye', body: 'เลือกช่องต้อนรับและอำลา พร้อมรูปภาพและลิงก์ของชุมชน', mode: 'Public', command: 'set-welcom' },
-    { title: 'Ticket, simplified.', body: 'สร้างแผง Ticket ปรับข้อความ ปุ่ม และคำตอบอัตโนมัติจากเว็บ', mode: 'Public', command: 'set-ticket' },
-    { title: 'Protection, always.', body: 'จัดการลิงก์เชิญ สแปม และภาพหลอกลวง เลือกช่องที่ต้องการตรวจสอบ', mode: 'Public', command: 'set-spam' }
-  ];
   app.innerHTML = `<div class="container">
     <section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="live-pill"><span class="dot"></span> DEVIL FOR DISCORD</span><span>YOUR COMMUNITY, UPGRADED</span></div>
       <h1>เซิร์ฟเวอร์ของคุณ<br><span>เป็นได้มากกว่า.</span></h1><p>สร้างชุมชนในแบบของคุณ ให้ Devil ดูแลการต้อนรับ Ticket และความปลอดภัย จัดการทุกอย่างได้จากที่เดียว</p>
@@ -82,7 +77,6 @@ function homepage() {
     </div></section>
     <section class="stats-bar"><div class="stat"><span class="stat-icon">${icon('server')}</span><div><div class="metric">${status.servers ? number(servers.length) : '—'}</div><p>เซิร์ฟเวอร์ที่ใช้ Devil</p></div></div><div class="stat"><span class="stat-icon">${icon('users')}</span><div><div class="metric">${number(members)}</div><p>สมาชิกในชุมชน</p></div></div><div class="stat"><span class="stat-icon">${icon('command')}</span><div><div class="metric">${number(catalog.commands.length)}</div><p>คำสั่ง Public & VIP</p></div></div><div class="stat"><span class="stat-icon">${icon('activity')}</span><div><div id="live-status" class="metric status">กำลังตรวจสอบ</div><p id="live-ping">สถานะบอทแบบสด</p></div></div></section>
     <section class="section owner-section">${sectionHead('THE PEOPLE BEHIND DEVIL', 'Meet the Owner', 'รู้จักผู้ดูแลที่อยู่เบื้องหลังชุมชนของคุณ')}<div class="owner-grid">${ownerProfiles.map(ownerHomeCard).join('')}</div>${ownerProfiles.length ? '' : empty('ยังไม่มีโปรไฟล์ Owner ที่พร้อมแสดง')}</section>
-    <section class="section toolkit-section">${sectionHead('THE COMMUNITY TOOLKIT', 'รายละเอียดเล็ก ๆ ที่ทำให้ชุมชนดีขึ้น', 'จากวันแรกที่เข้าร่วม จนถึงทุกวันที่เติบโตไปด้วยกัน', '/features')}<div class="grid">${features.map(featureCard).join('')}</div></section>
     <section class="section">${sectionHead('PART OF SOMETHING BIGGER', 'ชุมชนที่เติบโตไปกับ Devil', 'พบกับเซิร์ฟเวอร์ที่ให้ Devil เป็นส่วนหนึ่งของทุกวัน', '/servers')}<div class="grid">${servers.slice(0, 3).map(serverCard).join('')}</div>${servers.length ? '' : empty('ยังไม่สามารถโหลดข้อมูลเซิร์ฟเวอร์ได้')}</section>
     ${content.updates.length ? `<section class="section">${sectionHead('FRESH FROM DEVIL', 'อัปเดตล่าสุด', 'ติดตามสิ่งใหม่จากทีม Devil', '/updates')}<div class="timeline">${content.updates.slice().reverse().slice(0, 2).map(updateCard).join('')}</div></section>` : ''}
     <section class="cta-strip"><div class="cta-emblem"><img class="community-logo" src="/bot-avatar?v=original-logo" alt="" loading="lazy"></div><div><div class="section-label">NEXT CHAPTER STARTS HERE</div><h2>ชุมชนในแบบของคุณ เริ่มที่นี่.</h2><p>เชื่อมต่อ Discord แล้วให้ Devil ช่วยดูแลส่วนที่เหลือ</p></div><a class="button primary" href="/dashboard">เริ่มต้นใช้งาน ${icon('external')}</a></section>

@@ -265,7 +265,9 @@ test('first-visit tour supports next, back, completion, skip, replay and saved p
     assert.equal(doc.querySelector('.tour-overlay'), null);
     assert.equal(dom.window.localStorage.getItem('devil-tour-v1'), 'finished');
     assert.ok(!doc.querySelector('#app').inert);
-    assert.ok(doc.querySelector('.owner-section').compareDocumentPosition(doc.querySelector('.toolkit-section')) & 4);
+    assert.equal(doc.querySelector('.toolkit-section'), null);
+    assert.ok(!doc.querySelector('#app').textContent.includes('THE COMMUNITY TOOLKIT'));
+    assert.ok(doc.querySelector('.owner-section'));
     assert.equal(doc.querySelector('.hero [data-invite-bot]').getAttribute('href'), '/api/portal?action=invite');
     doc.querySelector('[data-start-tour]').click();
     assert.ok(doc.querySelector('.tour-panel'));
@@ -346,12 +348,12 @@ test('tour placement keeps targets separate from the guide on phones, visual vie
       let targetTop = fixture.width < 761 ? 320 : 100;
       const left = fixture.width < 761 ? 20 : 450, width = fixture.width < 761 ? 350 : 550;
       dom.window.scrollBy = ({ top }) => { targetTop -= top; };
-      const doc = dom.window.document, target = doc.querySelector('.toolkit-section .feature-card h3');
+      const doc = dom.window.document, target = doc.querySelector('.owner-section .section-heading');
       target.getBoundingClientRect = () => ({ left, right: left + width, top: targetTop, bottom: targetTop + fixture.targetHeight, width, height: fixture.targetHeight });
       dom.window.eval(tour);
       const panel = doc.querySelector('.tour-panel');
       Object.defineProperty(panel, 'offsetHeight', { get: () => 240 });
-      for (let i = 0; i < 3; i++) doc.querySelector('[data-tour-next]').click();
+      for (let i = 0; i < 2; i++) doc.querySelector('[data-tour-next]').click();
       const panelLeft = parseFloat(panel.style.left), panelTop = parseFloat(panel.style.top), panelWidth = parseFloat(panel.style.width);
       const rect = target.getBoundingClientRect();
       const separate = panelLeft + panelWidth <= rect.left || panelLeft >= rect.right || panelTop + 240 <= rect.top || panelTop >= rect.bottom;
