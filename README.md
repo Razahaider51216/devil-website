@@ -75,3 +75,11 @@ The homepage calls `GET /api/bot-status` on this website every 10 seconds. The V
 The VPS uses Caddy with a free `sslip.io` hostname and automatically managed TLS certificate. Caddy listens on public TCP ports 80 and 443, then proxies only `/health` to `127.0.0.1:8787`. The bot's health server only listens on loopback and requires `BOT_STATUS_SECRET` in the bot's `.env`. Caddy and the bot must be running for the badge to show online. Restart the public bot with `pm2 restart Devilv2`; restart HTTPS with `Restart-Service DevilStatusTLS` on Windows. Test `https://82-26-104-147.sslip.io/health` and `https://devil-website-amber.vercel.app/api/bot-status`. Stopping `Devilv2` should change the second response to offline, and restarting it should restore online.
 
 Before publishing, review the Privacy Policy and Terms of Service against the bot's actual behavior and add your own support contact if needed.
+
+## Feature previews from configured Discord channels
+
+In `/admin`, open **ฟีเจอร์**, add or edit a feature, and select **ตัวอย่างโต้ตอบจากระบบ Discord**. Choose the source server, system (Welcome, Ticket, Verify or VIP Shop), and a channel where that system is already configured. Click **โหลดตัวอย่างจากบอท**, check the result, then **บันทึกทั้งหมด**. Each published feature displays its own interactive preview in place of its image; visitors do not see configuration controls.
+
+The source picker requires a website Owner who also manages the source server and can view the channel. Saving rebuilds a display-only snapshot from the bot's stored configuration. Public data excludes source IDs, payment accounts, orders and member records. Preview buttons simulate actions locally. Published snapshots remain stable until the Owner saves again; editing a Discord panel does not automatically republish its contents to the website.
+
+Deploy the updated bridge with `npm run install:bot` and restart `Devilv2` after updating its files. The source module is `bot-integration/website-feature-previews.cjs`; it reads configured panel channels and does not scrape arbitrary messages.

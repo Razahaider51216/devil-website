@@ -43,8 +43,8 @@ function bindProfiles() { document.querySelectorAll('[data-profile]').forEach(bu
 function ownerHomeCard(owner) {
   return `<article class="owner-card owner-home-card"><div class="profile-avatar">${img(owner.avatarUrl, 'avatar', owner.name)}${img(owner.decorationUrl, 'decoration')}</div><div class="owner-home-copy"><span class="badge owner-badge">${icon('crown')} OWNER</span><h3>${escape(owner.name)}</h3><p>@${escape(owner.username)}</p></div><button class="button ghost" data-profile="${escape(owner.id)}">ดูโปรไฟล์ Discord ${icon('external')}</button></article>`;
 }
-function featureCard(f) {
-  return `<article class="card feature-card">${f.imageUrl ? img(f.imageUrl, 'card-image', f.title) : `<div class="feature-art"><div class="feature-orbit"></div>${icon(commandIcon(f.command || ''), 'feature-symbol')}<span class="feature-art-caption">DEVIL / ${escape(f.command || 'feature')}</span></div>`}<div class="card-top"><span class="badge ${f.mode === 'VIP' ? 'vip' : 'public'}">${f.mode === 'VIP' ? icon('vip') : icon('check')}${escape(f.mode || 'Public')}</span>${f.command ? `<span class="command-tag">/${escape(f.command)}</span>` : ''}</div><h3>${escape(f.title)}</h3><p>${escape(f.body)}</p></article>`;
+function featureCard(f, withPreview = false) {
+  return `<article class="card feature-card ${withPreview && f.preview ? 'has-feature-preview' : ''}">${withPreview && f.preview ? `<div data-feature-preview="${escape(f.id)}"></div>` : f.imageUrl ? img(f.imageUrl, 'card-image', f.title) : `<div class="feature-art"><div class="feature-orbit"></div>${icon(commandIcon(f.command || ''), 'feature-symbol')}<span class="feature-art-caption">DEVIL / ${escape(f.command || 'feature')}</span></div>`}<div class="card-top"><span class="badge ${f.mode === 'VIP' ? 'vip' : 'public'}">${f.mode === 'VIP' ? icon('vip') : icon('check')}${escape(f.mode || 'Public')}</span>${f.command ? `<span class="command-tag">/${escape(f.command)}</span>` : ''}</div><h3>${escape(f.title)}</h3><p>${escape(f.body)}</p></article>`;
 }
 function serverCard(g) { return `<article class="card"><div class="card-top">${img(g.iconUrl, 'server-icon', g.name) || `<span class="server-icon">${escape(g.name?.slice(0, 1))}</span>`}<h3>${escape(g.name)}</h3></div><span class="badge public">DEVIL COMMUNITY</span><div class="server-info"><span>${number(g.members)} สมาชิก</span><span><i class="dot"></i> ${number(g.online)} ออนไลน์</span></div></article>`; }
 function updateCard(u, index = 0) {
@@ -243,28 +243,87 @@ async function admin() {
   if (!session.user) return loginRequired();
   if (!session.owner) { app.innerHTML = `<div class="container">${head('OWNER AREA', 'หลังบ้าน', 'สำหรับ Owner เท่านั้น')}${empty('บัญชีนี้ไม่มีสิทธิ์เข้าหลังบ้าน')}</div>`; return; }
   let data = await api('admin'); let current = 'features';
+  let previewGuilds = [], previewGuildError = '';
+  try { previewGuilds = (await api('feature-preview')).guilds || []; } catch (error) { previewGuildError = error.message; }
   app.innerHTML = `<div class="container">${head('OWNER CONTROL CENTER', 'จัดการเว็บไซต์', 'เพิ่มฟีเจอร์ ข่าวอัปเดต และหมวดเซิร์ฟเวอร์ แก้ไขได้ทุกเมื่อ')}<div class="toolbar"><div class="tabs">${[['features', 'ฟีเจอร์'], ['updates', 'อัปเดต'], ['serverCategories', 'หมวดเซิร์ฟเวอร์']].map(([key, label]) => `<button data-cms-tab="${key}">${label}</button>`).join('')}</div><a class="button ghost small" href="/owner">${icon('crown')} คำสั่ง Owner</a><button id="add-content" class="button small">+ เพิ่มรายการ</button><button id="save-content" class="button primary">บันทึกทั้งหมด</button></div><div id="cms-list"></div><details><summary>ประวัติการจัดการล่าสุด</summary><div class="audit" id="audit-log"></div></details></div>`;
+  function bindFeatureSource(card, row) {
+    const controls = card.querySelector('[data-feature-source]');
+    const oldPreview = card.querySelector('[data-preview]');
+    oldPreview.hidden = Boolean(row.previewSource);
+    card.querySelector('[data-key="imageUrl"]').closest('label').hidden = Boolean(row.previewSource);
+    controls.innerHTML = `<label>รูปแบบฟีเจอร์<select data-source-kind><option value="image" ${!row.previewSource ? 'selected' : ''}>รูปภาพ / รายละเอียดเดิม</option><option value="discord" ${row.previewSource ? 'selected' : ''}>ตัวอย่างโต้ตอบจากระบบ Discord</option></select></label><div data-source-fields ${row.previewSource ? '' : 'hidden'}><p class="muted">เลือกช่องที่ตั้งค่าระบบไว้แล้ว ตัวอย่างจะใช้ข้อความ ปุ่ม ยศ และสินค้าจากบอท ณ ตอนบันทึก</p><div class="form-grid"><label>เซิร์ฟเวอร์ต้นทาง<select data-source-guild>${option('', 'เลือกเซิร์ฟเวอร์', !row.previewSource?.guildId)}${previewGuilds.map(g => option(g.id, g.name, row.previewSource?.guildId === g.id)).join('')}</select></label><label>ระบบตัวอย่าง<select data-source-system>${option('', 'เลือกระบบ', !row.previewSource?.system)}${[['welcome', 'Welcome / Goodbye'], ['ticket', 'Ticket'], ['verify', 'Verify'], ['shop', 'Shop · VIP']].map(([id, name]) => option(id, name, row.previewSource?.system === id)).join('')}</select></label><label class="wide">ช่องที่ตั้งค่าระบบไว้<select data-source-channel>${option('', 'เลือกเซิร์ฟเวอร์และระบบก่อน', true)}</select></label></div><div class="actions"><button type="button" class="button small" data-source-load disabled>${icon('reload')} โหลดตัวอย่างจากบอท</button></div><p data-source-status role="status"></p><div data-source-preview></div></div>`;
+    let generation = 0, systems = [];
+    const fields = controls.querySelector('[data-source-fields]'), guild = controls.querySelector('[data-source-guild]'), system = controls.querySelector('[data-source-system]'), channel = controls.querySelector('[data-source-channel]'), load = controls.querySelector('[data-source-load]'), statusLabel = controls.querySelector('[data-source-status]'), previewRoot = controls.querySelector('[data-source-preview]');
+    function showPreview() {
+      previewRoot.replaceChildren();
+      if (row.preview) window.DevilFeatureDemos.mount(previewRoot, { preview: row.preview, card: true });
+    }
+    function resetPreview() { row.preview = null; showPreview(); statusLabel.textContent = ''; }
+    function updateChannels() {
+      const rows = systems.find(s => s.id === system.value)?.channels || [];
+      channel.innerHTML = option('', rows.length ? 'เลือกช่องต้นทาง' : 'ไม่มีช่องที่ตั้งค่าระบบนี้', !row.previewSource?.channelId) + rows.map(c => option(c.id, `#${c.name}`, row.previewSource?.channelId === c.id)).join('');
+      load.disabled = !guild.value || !system.value || !channel.value;
+    }
+    async function loadSystems() {
+      const request = ++generation; systems = []; load.disabled = true;
+      if (!guild.value) { updateChannels(); return; }
+      statusLabel.textContent = 'กำลังอ่านช่องที่ตั้งค่าจากบอท…';
+      try {
+        const result = await api('feature-preview', undefined, { guildId: guild.value });
+        if (request !== generation || !controls.isConnected) return;
+        systems = result.systems || []; updateChannels();
+        statusLabel.textContent = systems.some(s => s.channels.length) ? '' : 'ยังไม่มีช่องที่ตั้งค่าระบบเหล่านี้ในเซิร์ฟเวอร์';
+      } catch (error) { if (request === generation) statusLabel.textContent = error.message; }
+    }
+    controls.querySelector('[data-source-kind]').onchange = event => {
+      if (event.target.value === 'discord') row.previewSource = { guildId: '', system: '', channelId: '' };
+      else { row.previewSource = null; row.preview = null; }
+      generation++; bindFeatureSource(card, row);
+    };
+    guild.onchange = () => { row.previewSource.guildId = guild.value; row.previewSource.channelId = ''; resetPreview(); loadSystems(); };
+    system.onchange = () => { generation++; row.previewSource.system = system.value; row.previewSource.channelId = ''; resetPreview(); updateChannels(); if (guild.value && !systems.length) loadSystems(); };
+    channel.onchange = () => { generation++; row.previewSource.channelId = channel.value; resetPreview(); load.disabled = !channel.value; };
+    load.onclick = async () => {
+      const request = ++generation; load.disabled = true; statusLabel.textContent = 'กำลังโหลดตัวอย่าง…';
+      try {
+        const result = await api('feature-preview', undefined, row.previewSource);
+        if (request !== generation || !controls.isConnected) return;
+        row.preview = result.preview; row.command = { welcome: 'set-welcom', ticket: 'set-ticket', verify: 'set-verify', shop: 'set-shop' }[row.previewSource.system];
+        row.mode = row.previewSource.system === 'shop' ? 'VIP' : 'Public';
+        card.querySelector('[data-key="command"]').value = row.command; card.querySelector('[data-key="mode"]').value = row.mode;
+        showPreview(); statusLabel.textContent = 'โหลดแล้ว กด “บันทึกทั้งหมด” เพื่อเผยแพร่ตัวอย่างนี้บนเว็บ';
+      } catch (error) { if (request === generation) statusLabel.textContent = error.message; }
+      finally { if (request === generation) load.disabled = !channel.value; }
+    };
+    if (previewGuildError) statusLabel.textContent = previewGuildError;
+    if (row.previewSource) { showPreview(); if (guild.value) loadSystems(); }
+    fields.hidden = !row.previewSource;
+  }
   function render() {
     document.querySelectorAll('[data-cms-tab]').forEach(b => b.classList.toggle('selected', b.dataset.cmsTab === current));
     document.querySelector('#audit-log').textContent = (data.audit || []).slice().reverse().map(a => `${a.at} · ${a.userId} · ${a.action}${a.guildId ? ` · ${a.guildId}` : ''}${a.system ? ` · ${a.system}` : ''}${a.command ? ` · /${a.command}` : ''}`).join('\n');
-    document.querySelector('#cms-list').innerHTML = data[current].map((row, i) => `<article class="card cms-item" data-index="${i}"><div class="card-top"><span class="badge">${escape(row.id)}</span><button class="button small danger" data-delete="${i}">ลบรายการ</button></div><div class="form-grid"><label>หัวข้อ<input data-key="title" maxlength="256" value="${escape(row.title)}"></label><label class="check"><input type="checkbox" data-key="published" ${row.published ? 'checked' : ''}>เผยแพร่บนเว็บ</label><label class="wide">รายละเอียด<textarea data-key="body" maxlength="10000">${escape(row.body)}</textarea></label>${current !== 'serverCategories' ? `<label>รูปภาพ (HTTPS URL)<input data-key="imageUrl" type="url" value="${escape(row.imageUrl)}"></label>${current === 'features' ? `<label>คำสั่ง<select data-key="command">${option('', 'ไม่ระบุคำสั่ง', !row.command)}${catalog.commands.map(c => option(c.name, `/${c.name}`, c.name === row.command)).join('')}</select></label><label>หมวด<select data-key="mode">${option('Public', 'Public', row.mode !== 'VIP')}${option('VIP', 'VIP', row.mode === 'VIP')}</select></label>` : ''}<div class="wide" data-preview>${img(row.imageUrl, 'card-image', row.title)}</div>` : `<label class="wide">เซิร์ฟเวอร์ในหมวด<select data-key="guildIds" multiple>${(status.servers || []).map(g => option(g.id, g.name, (row.guildIds || []).includes(g.id))).join('')}</select><small>เลือกหลายรายการ: Ctrl / ⌘ + คลิก</small></label>`}</div></article>`).join('') || empty('ยังไม่มีรายการ กด “เพิ่มรายการ” เพื่อเริ่มต้น');
+    document.querySelector('#cms-list').innerHTML = data[current].map((row, i) => `<article class="card cms-item" data-index="${i}"><div class="card-top"><span class="badge">${escape(row.id)}</span><button class="button small danger" data-delete="${i}">ลบรายการ</button></div><div class="form-grid"><label>หัวข้อ<input data-key="title" maxlength="256" value="${escape(row.title)}"></label><label class="check"><input type="checkbox" data-key="published" ${row.published ? 'checked' : ''}>เผยแพร่บนเว็บ</label><label class="wide">รายละเอียด<textarea data-key="body" maxlength="10000">${escape(row.body)}</textarea></label>${current !== 'serverCategories' ? `<label>รูปภาพ (HTTPS URL)<input data-key="imageUrl" type="url" value="${escape(row.imageUrl)}"></label>${current === 'features' ? `<label>คำสั่ง<select data-key="command">${option('', 'ไม่ระบุคำสั่ง', !row.command)}${catalog.commands.map(c => option(c.name, `/${c.name}`, c.name === row.command)).join('')}</select></label><label>หมวด<select data-key="mode">${option('Public', 'Public', row.mode !== 'VIP')}${option('VIP', 'VIP', row.mode === 'VIP')}</select></label>` : ''}<div class="wide" data-preview>${img(row.imageUrl, 'card-image', row.title)}</div>${current === 'features' ? '<div class="wide" data-feature-source></div>' : ''}` : `<label class="wide">เซิร์ฟเวอร์ในหมวด<select data-key="guildIds" multiple>${(status.servers || []).map(g => option(g.id, g.name, (row.guildIds || []).includes(g.id))).join('')}</select><small>เลือกหลายรายการ: Ctrl / ⌘ + คลิก</small></label>`}</div></article>`).join('') || empty('ยังไม่มีรายการ กด “เพิ่มรายการ” เพื่อเริ่มต้น');
     document.querySelectorAll('[data-index] [data-key]').forEach(input => input.oninput = () => { const row = data[current][Number(input.closest('[data-index]').dataset.index)]; row[input.dataset.key] = input.type === 'checkbox' ? input.checked : input.multiple ? [...input.selectedOptions].map(o => o.value) : input.value; if (input.dataset.key === 'imageUrl') input.closest('[data-index]').querySelector('[data-preview]').innerHTML = img(row.imageUrl, 'card-image', row.title); });
     document.querySelectorAll('[data-delete]').forEach(b => b.onclick = () => { data[current].splice(Number(b.dataset.delete), 1); render(); });
+    if (current === 'features') document.querySelectorAll('.cms-item').forEach(card => bindFeatureSource(card, data.features[Number(card.dataset.index)]));
   }
   document.querySelectorAll('[data-cms-tab]').forEach(b => b.onclick = () => { current = b.dataset.cmsTab; render(); });
   document.querySelector('#add-content').onclick = () => { data[current].push({ id: crypto.randomUUID(), title: '', body: '', imageUrl: '', published: false, command: '', mode: 'Public', guildIds: [] }); render(); };
-  document.querySelector('#save-content').onclick = async event => { event.target.disabled = true; try { data = await api('admin', { revision: data.revision, features: data.features, updates: data.updates, serverCategories: data.serverCategories }); toast('บันทึกเว็บไซต์เรียบร้อยแล้ว'); render(); } catch (e) { toast(e.message); } finally { event.target.disabled = false; } }; render();
+  document.querySelector('#save-content').onclick = async event => { event.target.disabled = true; try { data = await api('admin', { revision: data.revision, features: data.features.map(({ preview, ...row }) => row), updates: data.updates, serverCategories: data.serverCategories }); toast('บันทึกเว็บไซต์เรียบร้อยแล้ว'); render(); } catch (e) { toast(e.message); } finally { event.target.disabled = false; } }; render();
 }
 async function start() {
   // Static information pages remain available even if Discord or the CMS is down.
   if (window.DevilInformation?.render(route, app)) return;
   if (route === '/features') {
-    app.innerHTML = `<div class="container">${head('EXPLORE DEVIL', 'ฟีเจอร์', 'ทดลอง Welcome, Ticket, Verify และ Shop ในรูปแบบข้อความ Discord')}<div id="feature-demo-root"></div><section class="section"><div class="section-heading"><div><div class="section-label">MORE FROM DEVIL</div><h2>ฟีเจอร์และรายละเอียด</h2><p>ระบบต่าง ๆ และข้อมูลจากทีม Devil</p></div></div><div class="grid" id="published-features"><div class="loading">กำลังโหลดรายละเอียด…</div></div></section></div>`;
-    window.DevilFeatureDemos.mount(document.querySelector('#feature-demo-root'));
+    app.innerHTML = `<div class="container">${head('EXPLORE DEVIL', 'ฟีเจอร์', 'ระบบต่าง ๆ ของ Devil พร้อมตัวอย่างที่กดใช้งานได้')}<div class="grid feature-gallery" id="published-features"><div class="loading">กำลังโหลดฟีเจอร์…</div></div></div>`;
     api('content').then(data => {
       const features = Array.isArray(data.features) ? data.features.filter(f => f && f.mode !== 'Private') : [];
-      document.querySelector('#published-features').innerHTML = features.map(featureCard).join('') || empty('ทีมงานยังไม่ได้เผยแพร่รายละเอียดเพิ่มเติม');
-    }).catch(() => { document.querySelector('#published-features').innerHTML = empty('ยังโหลดรายละเอียดเพิ่มเติมไม่ได้ แต่ทดลองระบบด้านบนได้เลย'); });
+      document.querySelector('#published-features').innerHTML = features.map(f => featureCard(f, true)).join('') || empty('ทีมงานยังไม่ได้เผยแพร่ฟีเจอร์');
+      app.querySelectorAll('[data-feature-preview]').forEach(root => {
+        const feature = features.find(f => f.id === root.dataset.featurePreview);
+        if (feature?.preview) window.DevilFeatureDemos.mount(root, { preview: feature.preview, card: true });
+      });
+    }).catch(() => { document.querySelector('#published-features').innerHTML = empty('ยังโหลดฟีเจอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง'); });
     return;
   }
   // The server directory does not depend on login, Owner profiles or the CMS.

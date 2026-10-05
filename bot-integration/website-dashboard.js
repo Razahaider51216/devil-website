@@ -4,6 +4,7 @@ const path = require('node:path');
 const { timingSafeEqual, createHash } = require('node:crypto');
 const { systems, getPath, setPath } = require('./website-settings-schema.cjs');
 const { createOwnerTools } = require('./website-owner-tools.cjs');
+const { createFeaturePreviews } = require('./website-feature-previews.cjs');
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const ids = value => String(value || '').split(',').map(v => v.trim()).filter(Boolean);
@@ -61,6 +62,11 @@ function validateContent(input) {
       const body = String(row.body || ''); if (body.length > 10000) fail(400, 'เนื้อหายาวเกินไป');
       const imageUrl = String(row.imageUrl || ''); if (imageUrl && (!/^https:\/\//.test(imageUrl) || imageUrl.length > 2048)) fail(400, 'รูปภาพต้องใช้ HTTPS');
       const record = { id: row.id, title: row.title, body, imageUrl, published: row.published === true, command: String(row.command || '').slice(0, 100), mode: row.mode === 'VIP' ? 'VIP' : 'Public', date: Number.isFinite(Date.parse(row.date)) ? new Date(row.date).toISOString() : new Date().toISOString() };
+      if (group === 'features' && row.previewSource) {
+        const { guildId, channelId, system } = row.previewSource;
+        if (!/^\d{15,22}$/.test(guildId || '') || !/^\d{15,22}$/.test(channelId || '') || !['welcome', 'ticket', 'verify', 'shop'].includes(system)) fail(400, 'กรุณาเลือกระบบ เซิร์ฟเวอร์ และช่องต้นทางของตัวอย่างให้ครบ');
+        record.previewSource = { guildId, channelId, system };
+      }
       if (group === 'serverCategories') { if (!Array.isArray(row.guildIds) || row.guildIds.some(id => !/^\d{15,22}$/.test(id))) fail(400, 'Guild IDs ไม่ถูกต้อง'); record.guildIds = [...new Set(row.guildIds)]; }
       return record;
     });
@@ -88,17 +94,26 @@ function createDashboardServer({ client, data, saveData, publish, ownerGuildIds,
     return result;
   };
   const locks = new Set();
+  const featurePreviews = createFeaturePreviews({ client, data, isOwner: id => ownerIds().includes(id), premium });
   const ownerTools = createOwnerTools({ client, data, saveData, validateFields, isOwner: id => ownerIds().includes(id), ownerGuildIds, ownerReloadFiles, executeOwner,
     audit: record => persist({ ...content, audit: [...content.audit, record].slice(-200) }) });
   async function dispatch(body) {
+    if (body.action === 'feature-preview-read') return featurePreviews.read(body);
     if (['owner-read', 'owner-execute'].includes(body.action)) return ownerTools(body);
-    if (body.action === 'content') return Object.fromEntries(['features', 'updates', 'serverCategories'].map(k => [k, content[k].filter(v => v.published)]));
+    if (body.action === 'content') return Object.fromEntries(['features', 'updates', 'serverCategories'].map(k => [k, content[k].filter(v => v.published).map(({ previewSource, ...publicRow }) => publicRow)]));
     if (body.action === 'guilds') return { guilds: [...client.guilds.cache.values()].map(g => ({ id: g.id, name: g.name, vip: premium(g.id) })) };
     if (['admin-read', 'admin-write'].includes(body.action)) {
       if (!ownerIds().includes(body.userId)) fail(403, 'เฉพาะ Owner เท่านั้น');
       if (body.action === 'admin-write') {
         if (body.content?.revision !== contentRevision()) fail(409, 'เนื้อหาเปลี่ยนจากอีกหน้าต่าง กรุณาโหลดใหม่');
-        persist({ ...validateContent(body.content), audit: [...content.audit, { userId: body.userId, action: 'content-update', at: new Date().toISOString() }].slice(-200) });
+        const next = validateContent(body.content);
+        for (const feature of next.features) if (feature.previewSource) {
+          feature.preview = (await featurePreviews.read({ userId: body.userId, ...feature.previewSource })).preview;
+          feature.mode = feature.previewSource.system === 'shop' ? 'VIP' : 'Public';
+        }
+        // Source reads can take time; prevent overwriting a concurrent update.
+        if (body.content.revision !== contentRevision()) fail(409, 'เนื้อหาเปลี่ยนจากอีกหน้าต่าง กรุณาโหลดใหม่');
+        persist({ ...next, audit: [...content.audit, { userId: body.userId, action: 'content-update', at: new Date().toISOString() }].slice(-200) });
       }
       return { ...content, revision: contentRevision() };
     }

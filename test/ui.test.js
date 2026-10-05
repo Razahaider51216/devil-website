@@ -59,6 +59,7 @@ test('feature demos work without login or CMS and simulate Welcome, Ticket and V
   const dom = await page('/features', { session: new Promise(() => {}), content: new Promise(() => {}) });
   try {
     const win = dom.window, doc = win.document;
+    const playground = doc.createElement('div'); doc.querySelector('#app').append(playground); win.DevilFeatureDemos.mount(playground);
     let requests = 0; win.fetch = async () => { requests++; throw new Error('Demo must not contact Discord'); };
     const selectTab = id => doc.querySelector(`[data-demo-tab="${id}"]`).click();
     const action = id => doc.querySelector(`[data-demo-action="${id}"]`).click();
@@ -93,12 +94,13 @@ test('Shop demo supports keyboard selection, payment simulation, reset and Disco
   const dom = await page('/features');
   try {
     const win = dom.window, doc = win.document;
+    const playground = doc.createElement('div'); doc.querySelector('#app').append(playground); win.DevilFeatureDemos.mount(playground);
     let requests = 0; win.fetch = async () => { requests++; throw new Error('Demo must not create purchases'); };
     const action = id => doc.querySelector(`[data-demo-action="${id}"]`).click();
     const ticketTab = doc.querySelector('[data-demo-tab="ticket"]');
     ticketTab.focus(); ticketTab.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
     assert.equal(doc.activeElement.dataset.demoTab, 'shop');
-    assert.equal(doc.querySelector('#demo-workspace').getAttribute('aria-labelledby'), 'demo-tab-shop');
+    assert.ok(doc.querySelector('.demo-workspace').getAttribute('aria-labelledby').endsWith('demo-tab-shop'));
     action('shop-menu'); assert.equal(doc.querySelector('.demo-select-trigger').getAttribute('aria-expanded'), 'true');
     doc.activeElement.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
     assert.equal(doc.activeElement.dataset.product, 'vip'); doc.activeElement.click();
@@ -136,6 +138,64 @@ test('feature demo serves original bot artwork and keeps published CMS features 
       assert.ok(response.headers.get('content-type').includes(asset.endsWith('.png') ? 'image/png' : asset.endsWith('.css') ? 'text/css' : 'text/javascript'));
     }
   } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test('published feature cards use independent configured previews instead of a visitor configuration playground', async () => {
+  const previews = [
+    { system: 'ticket', title: 'Real support panel', description: 'Configured text', label: 'Contact us', buttonStyle: 'success', channelName: 'help-desk', color: '#12ab34', imageUrl: 'https://example.com/configured.png', autoReplies: ['Configured reply'] },
+    { system: 'verify', title: 'Our roles', description: 'Pick a role', label: 'Claim', channelName: 'roles', roles: [{ name: 'Actual role <script>', emoji: '✅' }], color: '#000000' },
+    { system: 'shop', title: 'Our shop', description: 'Select', channelName: 'store', products: [{ id: 'custom', name: 'Actual product <script>', price: 321, role: 'Actual VIP', duration: '4 เดือน' }], color: '#167aca' },
+    { system: 'shop', title: 'Second shop', description: 'Select', channelName: 'store-2', products: [{ id: 'custom', name: 'Second product', price: 10, role: 'Member', duration: 'ถาวร' }], color: '#167aca' }
+  ];
+  const dom = await page('/features', { content: { features: previews.map((preview, i) => ({ id: `f${i}`, title: `Feature ${i}`, body: 'Description', preview, imageUrl: 'https://example.com/old-photo.png' })), updates: [] } });
+  try {
+    const doc = dom.window.document, roots = [...doc.querySelectorAll('[data-feature-preview]')];
+    assert.equal(roots.length, 4); assert.equal(doc.querySelector('#feature-demo-root'), null);
+    assert.equal(doc.querySelector('img[src="https://example.com/old-photo.png"]'), null);
+    roots.forEach(root => { assert.equal(root.querySelector('.demo-settings').hidden, true); assert.equal(root.querySelector('.demo-tabs').hidden, true); });
+    const allIds = [...doc.querySelectorAll('[id]')].map(el => el.id); assert.equal(new Set(allIds).size, allIds.length);
+    assert.equal(roots[0].querySelector('[data-demo-channel]').textContent, 'help-desk');
+    assert.ok(roots[0].querySelector('[data-demo-action="ticket-open"]').classList.contains('success'));
+    roots[0].querySelector('[data-demo-action="ticket-open"]').click();
+    assert.ok(roots[0].textContent.includes('Configured reply'));
+    roots[1].querySelector('[data-demo-action="verify-role"]').click();
+    assert.ok(roots[1].querySelector('.demo-result').textContent.includes('Actual role <script>'));
+    assert.equal(roots[1].querySelector('script'), null);
+    roots[2].querySelector('[data-demo-action="shop-menu"]').click();
+    roots[2].querySelector('[data-product="custom"]').click();
+    assert.ok(roots[2].querySelector('.demo-product').textContent.includes('321.00'));
+    assert.ok(roots[2].querySelector('.demo-product').textContent.includes('Actual product <script>'));
+    assert.equal(roots[3].querySelector('.demo-product'), null);
+    const trigger = roots[2].querySelector('.demo-select-trigger');
+    assert.ok(doc.getElementById(trigger.getAttribute('aria-controls')));
+  } finally { dom.window.close(); }
+});
+
+test('Owner CMS chooses configured source channels, loads a preview and saves its source with CSRF', async () => {
+  const guildId = '123456789012345678', channelId = '333333333333333333', changes = [];
+  const preview = { system: 'ticket', title: 'Source ticket', description: 'Help', label: 'Open source ticket', channelName: 'support', color: '#123456' };
+  const cms = { features: [{ id: 'feature', title: 'Our support', body: 'Description', mode: 'Public', command: 'set-ticket', imageUrl: '', published: true }], updates: [], serverCategories: [], audit: [], revision: 'current' };
+  const dom = await page('/admin', {
+    session: { user: { name: 'Owner' }, owner: true, csrf: 'source-csrf' },
+    admin: (url, options) => { if (options?.method === 'POST') { changes.push({ body: JSON.parse(options.body), csrf: options.headers['X-CSRF-Token'] }); return { ...cms, features: [{ ...cms.features[0], previewSource: { guildId, channelId, system: 'ticket' }, preview }] }; } return cms; },
+    'feature-preview': url => { const query = new URL(url, 'https://devil.example').searchParams; return query.get('system') ? { preview } : query.get('guildId') ? { systems: [{ id: 'ticket', channels: [{ id: channelId, name: 'support' }] }, { id: 'verify', channels: [] }] } : { guilds: [{ id: guildId, name: 'My guild' }] }; }
+  });
+  try {
+    const doc = dom.window.document;
+    const select = (selector, value) => { const element = doc.querySelector(selector); element.value = value; element.dispatchEvent(new dom.window.Event('change', { bubbles: true })); };
+    select('[data-source-kind]', 'discord');
+    select('[data-source-guild]', guildId); await flush(); await flush();
+    select('[data-source-system]', 'ticket');
+    assert.ok(doc.querySelector('[data-source-channel]').textContent.includes('#support'));
+    select('[data-source-channel]', channelId);
+    doc.querySelector('[data-source-load]').click(); await flush(); await flush();
+    assert.ok(doc.querySelector('[data-source-preview]').textContent.includes('Open source ticket'));
+    assert.equal(doc.querySelector('[data-key="imageUrl"]').closest('label').hidden, true);
+    doc.querySelector('#save-content').click(); await flush(); await flush();
+    assert.equal(changes.length, 1); assert.equal(changes[0].csrf, 'source-csrf');
+    assert.deepEqual(changes[0].body.features[0].previewSource, { guildId, channelId, system: 'ticket' });
+    assert.equal(changes[0].body.features[0].preview, undefined);
+  } finally { dom.window.close(); }
 });
 
 test('Public and VIP tabs filter the real catalog without exposing Private', async () => {

@@ -62,6 +62,17 @@ export default async function handler(req, res) {
       if (!owners().includes(session.userId)) return send(res, 403, { error: 'เฉพาะ Owner เท่านั้น' });
       return send(res, 200, await bridge(req.method === 'GET' ? 'admin-read' : 'admin-write', { userId: session.userId, ...(req.method === 'POST' ? { content: await readBody(req) } : {}) }));
     }
+    if (action === 'feature-preview' && req.method === 'GET') {
+      if (!owners().includes(session.userId)) return send(res, 403, { error: 'เฉพาะ Owner เท่านั้น' });
+      const guildId = url.searchParams.get('guildId'), channelId = url.searchParams.get('channelId'), system = url.searchParams.get('system');
+      if ([guildId, channelId].some(id => id && !/^\d{15,22}$/.test(id))) return send(res, 400, { error: 'ID เซิร์ฟเวอร์หรือช่องไม่ถูกต้อง' });
+      if (!guildId) {
+        const [mine, joined] = await Promise.all([guilds(session.token), bridge('guilds')]);
+        const botIds = new Set(joined.guilds.map(g => g.id));
+        return send(res, 200, { guilds: mine.filter(g => botIds.has(g.id) && (g.owner || (BigInt(g.permissions || 0) & 40n) !== 0n)).map(g => ({ id: g.id, name: g.name })) });
+      }
+      return send(res, 200, await bridge('feature-preview-read', { userId: session.userId, guildId, channelId, system }));
+    }
     if (action === 'owner' && ['GET', 'POST'].includes(req.method)) {
       if (!owners().includes(session.userId)) return send(res, 403, { error: 'เฉพาะ Owner เท่านั้น' });
       const guildId = url.searchParams.get('guildId');

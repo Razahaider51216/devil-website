@@ -23,6 +23,7 @@ test('dashboard and CMS reject unauthenticated, non-owner, cross-origin and CSRF
   const session = { userId: '111111111111111111', token: 'test', csrf: 'expected-csrf', exp: Date.now() + 60000 };
   assert.equal((await request('admin')).code, 401);
   assert.equal((await request('owner')).code, 401);
+  assert.equal((await request('feature-preview')).code, 401);
   assert.equal((await request('settings&guildId=123456789012345678')).code, 401);
   assert.equal((await request('admin', { session })).code, 403);
   assert.equal((await request('owner', { session })).code, 403);
