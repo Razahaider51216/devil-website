@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { timingSafeEqual, createHash } = require('node:crypto');
 const { systems, getPath, setPath } = require('./website-settings-schema.cjs');
+const { createOwnerTools } = require('./website-owner-tools.cjs');
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const ids = value => String(value || '').split(',').map(v => v.trim()).filter(Boolean);
@@ -66,7 +67,7 @@ function validateContent(input) {
   }
   return out;
 }
-function createDashboardServer({ client, data, saveData, publish, secret, contentPath = path.join(__dirname, 'website-content.json') }) {
+function createDashboardServer({ client, data, saveData, publish, ownerGuildIds, ownerReloadFiles, executeOwner, secret, contentPath = path.join(__dirname, 'website-content.json') }) {
   if (!secret) throw new Error('BOT_DASHBOARD_SECRET is required');
   let content = structuredClone(require('./website-default-content.json'));
   if (fs.existsSync(contentPath)) content = JSON.parse(fs.readFileSync(contentPath, 'utf8'));
@@ -87,7 +88,10 @@ function createDashboardServer({ client, data, saveData, publish, secret, conten
     return result;
   };
   const locks = new Set();
+  const ownerTools = createOwnerTools({ client, data, saveData, validateFields, isOwner: id => ownerIds().includes(id), ownerGuildIds, ownerReloadFiles, executeOwner,
+    audit: record => persist({ ...content, audit: [...content.audit, record].slice(-200) }) });
   async function dispatch(body) {
+    if (['owner-read', 'owner-execute'].includes(body.action)) return ownerTools(body);
     if (body.action === 'content') return Object.fromEntries(['features', 'updates', 'serverCategories'].map(k => [k, content[k].filter(v => v.published)]));
     if (body.action === 'guilds') return { guilds: [...client.guilds.cache.values()].map(g => ({ id: g.id, name: g.name, vip: premium(g.id) })) };
     if (['admin-read', 'admin-write'].includes(body.action)) {

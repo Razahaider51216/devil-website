@@ -2,7 +2,7 @@ import { readFile, writeFile, copyFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 const botRoot = path.resolve(process.argv[2] || '../Devil');
 await mkdir('bot-integration', { recursive: true });
-for (const name of ['website-dashboard.js', 'website-settings-schema.cjs', 'website-default-content.json']) {
+for (const name of ['website-dashboard.js', 'website-settings-schema.cjs', 'website-owner-tools.cjs', 'website-default-content.json']) {
   await copyFile(path.join('bot-integration', name), path.join(botRoot, name));
 }
 const entry = path.join(botRoot, 'index.js');

@@ -49,7 +49,7 @@ export const server = http.createServer(async (request, response) => {
     response.end();
     return;
   }
-  const isPage = ['/', '/commands', '/servers', '/features', '/updates', '/dashboard', '/admin'].includes(pathname);
+  const isPage = ['/', '/commands', '/servers', '/features', '/updates', '/dashboard', '/admin', '/owner'].includes(pathname);
   const legal = ['/privacy', '/terms', '/support'].includes(pathname);
   const file = isPage ? ['index.html', 'text/html; charset=utf-8'] : legal ? ['legal.html', 'text/html; charset=utf-8'] : staticFiles[pathname];
   if (!file) {

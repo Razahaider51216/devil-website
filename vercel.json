@@ -12,6 +12,7 @@
     { "source": "/updates", "destination": "/index.html" },
     { "source": "/dashboard", "destination": "/index.html" },
     { "source": "/admin", "destination": "/index.html" },
+    { "source": "/owner", "destination": "/index.html" },
     { "source": "/bot-avatar", "destination": "/api/bot-avatar" }
   ]
 }

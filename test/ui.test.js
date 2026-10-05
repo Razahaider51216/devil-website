@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
+import { createRequire } from 'node:module';
+const { commands: ownerCommands } = createRequire(import.meta.url)('../bot-integration/website-owner-tools.cjs');
 const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const script = await readFile(new URL('../public/portal-app.js', import.meta.url), 'utf8');
 const icons = await readFile(new URL('../public/icons.js', import.meta.url), 'utf8');
@@ -11,11 +13,11 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 async function page(route, fixtures = {}) {
   const dom = new JSDOM(html, { url: `https://devil.example${route}`, runScripts: 'outside-only' });
   dom.window.structuredClone = structuredClone;
-  dom.window.fetch = async url => {
+  dom.window.fetch = async (url, options) => {
     const action = new URL(url, dom.window.location.href).searchParams.get('action');
     const fallback = action === 'catalog' ? catalog : action === 'session' ? { user: null } : action === 'owners' ? { owners: [] } : action === 'content' ? { features: [], updates: [], serverCategories: [] } : { servers: [], online: false };
     const result = fixtures[action] || fallback;
-    return { ok: true, json: async () => result };
+    return { ok: true, json: async () => typeof result === 'function' ? result(url, options) : result };
   };
   dom.window.eval(icons); dom.window.eval(account); dom.window.eval(script); await flush(); await flush(); return dom;
 }
@@ -31,6 +33,28 @@ test('Public and VIP tabs filter the real catalog without exposing Private', asy
     assert.ok(!doc.querySelector('#command-list').textContent.includes('/set-welcom'));
     const search = doc.querySelector('#command-search'); search.value = 'setbuy'; search.dispatchEvent(new dom.window.Event('input'));
     assert.equal(doc.querySelectorAll('#command-list article').length, 1);
+  } finally { dom.window.close(); }
+});
+
+test('Owner command page requires an Owner and submits selected channel/form values with CSRF', async () => {
+  const denied = await page('/owner', { session: { user: { name: 'Member' }, owner: false } });
+  assert.equal(denied.window.document.querySelector('#owner-guild'), null); denied.window.close();
+  const changes = [];
+  const fixture = { commands: ownerCommands, guilds: [{ id: '123', name: 'Main server' }], values: { 'announe-panel': { channelId: '456', mentionType: 'none', sendMode: 'new' } }, channels: [{ id: '456', name: 'announcements', type: 0 }], roles: [], revision: 'revision' };
+  const dom = await page('/owner', { session: { user: { name: 'Owner' }, owner: true, csrf: 'owner-csrf' }, owner: (url, options) => {
+    if (options?.method === 'POST') { changes.push({ body: JSON.parse(options.body), csrf: options.headers['X-CSRF-Token'] }); return { ok: true, message: 'ส่งประกาศแล้ว' }; }
+    return fixture;
+  } });
+  try {
+    const doc = dom.window.document, select = doc.querySelector('#owner-guild');
+    select.value = '123'; select.dispatchEvent(new dom.window.Event('change')); await flush(); await flush();
+    const form = doc.querySelector('#owner-command-form');
+    assert.equal(form.elements.channelId.value, '456');
+    form.elements.title.value = 'Release'; form.elements.changelog.value = 'New feature';
+    form.dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true })); await flush(); await flush();
+    assert.equal(changes.length, 1); assert.equal(changes[0].body.command, 'announe-panel');
+    assert.equal(changes[0].body.values.channelId, '456'); assert.equal(changes[0].csrf, 'owner-csrf');
+    assert.equal(doc.querySelector('#owner-result').textContent, 'ส่งประกาศแล้ว');
   } finally { dom.window.close(); }
 });
 test('server directory displays Discord guilds while the CMS is unavailable', async () => {

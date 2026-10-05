@@ -187,14 +187,64 @@ async function dashboard() {
     } catch (e) { if (currentRequest === requestId) target.innerHTML = `<div class="error">${escape(e.message)}</div>`; }
   };
 }
+async function ownerPage() {
+  if (!session.user) return loginRequired();
+  if (!session.owner) { app.innerHTML = `<div class="container">${head('OWNER AREA', 'คำสั่ง Owner', 'สำหรับ Owner ของ Devil')}${empty('บัญชีนี้ไม่มีสิทธิ์ใช้คำสั่ง Owner')}</div>`; return; }
+  const initial = await api('owner');
+  app.innerHTML = `<div class="container">${head('OWNER COMMANDS', 'คำสั่ง Owner', 'จัดการประกาศ สถานะ และระบบบอท Public จากที่เดียว')}<div class="toolbar"><a class="button ghost small" href="/admin">${icon('grid')} จัดการเว็บไซต์</a><label class="owner-guild-label">เซิร์ฟเวอร์หลัก<select id="owner-guild">${option('', '— เลือกเซิร์ฟเวอร์ —', true)}${initial.guilds.map(g => option(g.id, g.name, false)).join('')}</select></label><button id="owner-refresh" class="button small">${icon('update')} โหลดการตั้งค่าใหม่</button></div><p id="owner-result" role="status" class="form-result"></p><div id="owner-tools">${empty(initial.guilds.length ? 'เลือกเซิร์ฟเวอร์หลักเพื่อใช้คำสั่ง Owner' : 'บอทยังไม่ได้อยู่ในเซิร์ฟเวอร์หลักที่ตั้งไว้')}</div></div>`;
+  const guildSelect = document.querySelector('#owner-guild');
+  const target = document.querySelector('#owner-tools');
+  const result = document.querySelector('#owner-result');
+  let data, selected = initial.commands[0]?.id, generation = 0, executing = false;
+  const choices = { new: 'ส่งประกาศใหม่', edit: 'แก้ไขประกาศล่าสุดในช่องนี้', stats: 'จำนวนเซิร์ฟเวอร์และสมาชิก', custom: 'ข้อความที่กำหนดเอง', none: 'ไม่แจ้งเตือน', everyone: '@everyone', here: '@here', role: 'แจ้งเตือนยศที่เลือก', '': 'ทุกระบบที่ Reload ได้' };
+  function choose(id) {
+    selected = id;
+    target.querySelectorAll('[data-owner-command]').forEach(button => button.classList.toggle('selected', button.dataset.ownerCommand === id));
+    const command = data.commands.find(c => c.id === id);
+    const values = data.values[id] || {};
+    target.querySelector('#owner-form-area').innerHTML = `<form id="owner-command-form" class="card owner-command-card"><div class="settings-head"><div><h3>${icon(command.icon)} ${escape(command.label)}</h3><p>${escape(command.description)}</p></div><span class="badge owner-badge">${icon('crown')} Owner</span></div><div class="form-grid">${command.fields.map(f => f.type === 'choice' ? `<label>${escape(f.label)}<select name="${escape(f.key)}">${f.choices.map(v => option(v, choices[v] || v, v === values[f.key])).join('')}</select></label>` : fieldHtml(f, values[f.key] ?? '', data)).join('')}</div><div class="form-actions"><button class="button primary" type="submit">${icon(command.icon)} ${id === 'announe-panel' ? 'เผยแพร่ใน Discord' : id === 'reload' ? 'Reload ระบบที่เลือก' : 'บันทึกสถานะ'}</button></div></form>`;
+    const form = target.querySelector('#owner-command-form');
+    let requestId = crypto.randomUUID();
+    form.oninput = () => { requestId = crypto.randomUUID(); };
+    form.onsubmit = async event => {
+      event.preventDefault(); if (executing) return;
+      executing = true;
+      const buttons = [...document.querySelectorAll('#owner-tools button, #owner-refresh')];
+      buttons.forEach(button => button.disabled = true); guildSelect.disabled = true;
+      result.textContent = id === 'reload' ? 'กำลัง Reload ระบบบอท…' : 'กำลังดำเนินคำสั่ง…';
+      try {
+        const values = Object.fromEntries(command.fields.map(f => [f.key, form.elements.namedItem(f.key).value]));
+        const response = await api('owner', { command: id, values, revision: data.revision, requestId }, { guildId: guildSelect.value });
+        result.textContent = response.message; toast(response.message);
+        await load();
+      } catch (error) { result.textContent = error.message; toast(error.message); }
+      finally { executing = false; buttons.forEach(button => button.disabled = false); guildSelect.disabled = false; }
+    };
+  }
+  async function load() {
+    const current = ++generation;
+    if (!guildSelect.value) { target.innerHTML = empty('เลือกเซิร์ฟเวอร์หลักเพื่อใช้คำสั่ง Owner'); return; }
+    target.innerHTML = '<div class="loading">กำลังโหลดคำสั่ง Owner…</div>';
+    try {
+      const response = await api('owner', undefined, { guildId: guildSelect.value });
+      if (current !== generation) return;
+      data = response;
+      target.innerHTML = `<div class="dashboard-layout"><aside class="sidebar" aria-label="คำสั่ง Owner">${data.commands.map(c => `<button type="button" data-owner-command="${escape(c.id)}">${icon(c.icon)}<span>${escape(c.label)}</span></button>`).join('')}</aside><div id="owner-form-area"></div></div>`;
+      target.querySelectorAll('[data-owner-command]').forEach(button => button.onclick = () => choose(button.dataset.ownerCommand));
+      choose(data.commands.some(c => c.id === selected) ? selected : data.commands[0].id);
+    } catch (error) { if (current === generation) target.innerHTML = `<div class="error">${escape(error.message)}</div>`; }
+  }
+  guildSelect.onchange = () => { result.textContent = ''; load(); };
+  document.querySelector('#owner-refresh').onclick = () => { if (!executing) load(); };
+}
 async function admin() {
   if (!session.user) return loginRequired();
   if (!session.owner) { app.innerHTML = `<div class="container">${head('OWNER AREA', 'หลังบ้าน', 'สำหรับ Owner เท่านั้น')}${empty('บัญชีนี้ไม่มีสิทธิ์เข้าหลังบ้าน')}</div>`; return; }
   let data = await api('admin'); let current = 'features';
-  app.innerHTML = `<div class="container">${head('OWNER CONTROL CENTER', 'จัดการเว็บไซต์', 'เพิ่มฟีเจอร์ ข่าวอัปเดต และหมวดเซิร์ฟเวอร์ แก้ไขได้ทุกเมื่อ')}<div class="toolbar"><div class="tabs">${[['features', 'ฟีเจอร์'], ['updates', 'อัปเดต'], ['serverCategories', 'หมวดเซิร์ฟเวอร์']].map(([key, label]) => `<button data-cms-tab="${key}">${label}</button>`).join('')}</div><button id="add-content" class="button small">+ เพิ่มรายการ</button><button id="save-content" class="button primary">บันทึกทั้งหมด</button></div><div id="cms-list"></div><details><summary>ประวัติการจัดการล่าสุด</summary><div class="audit" id="audit-log"></div></details></div>`;
+  app.innerHTML = `<div class="container">${head('OWNER CONTROL CENTER', 'จัดการเว็บไซต์', 'เพิ่มฟีเจอร์ ข่าวอัปเดต และหมวดเซิร์ฟเวอร์ แก้ไขได้ทุกเมื่อ')}<div class="toolbar"><div class="tabs">${[['features', 'ฟีเจอร์'], ['updates', 'อัปเดต'], ['serverCategories', 'หมวดเซิร์ฟเวอร์']].map(([key, label]) => `<button data-cms-tab="${key}">${label}</button>`).join('')}</div><a class="button ghost small" href="/owner">${icon('crown')} คำสั่ง Owner</a><button id="add-content" class="button small">+ เพิ่มรายการ</button><button id="save-content" class="button primary">บันทึกทั้งหมด</button></div><div id="cms-list"></div><details><summary>ประวัติการจัดการล่าสุด</summary><div class="audit" id="audit-log"></div></details></div>`;
   function render() {
     document.querySelectorAll('[data-cms-tab]').forEach(b => b.classList.toggle('selected', b.dataset.cmsTab === current));
-    document.querySelector('#audit-log').textContent = (data.audit || []).slice().reverse().map(a => `${a.at} · ${a.userId} · ${a.action}${a.guildId ? ` · ${a.guildId}` : ''}${a.system ? ` · ${a.system}` : ''}`).join('\n');
+    document.querySelector('#audit-log').textContent = (data.audit || []).slice().reverse().map(a => `${a.at} · ${a.userId} · ${a.action}${a.guildId ? ` · ${a.guildId}` : ''}${a.system ? ` · ${a.system}` : ''}${a.command ? ` · /${a.command}` : ''}`).join('\n');
     document.querySelector('#cms-list').innerHTML = data[current].map((row, i) => `<article class="card cms-item" data-index="${i}"><div class="card-top"><span class="badge">${escape(row.id)}</span><button class="button small danger" data-delete="${i}">ลบรายการ</button></div><div class="form-grid"><label>หัวข้อ<input data-key="title" maxlength="256" value="${escape(row.title)}"></label><label class="check"><input type="checkbox" data-key="published" ${row.published ? 'checked' : ''}>เผยแพร่บนเว็บ</label><label class="wide">รายละเอียด<textarea data-key="body" maxlength="10000">${escape(row.body)}</textarea></label>${current !== 'serverCategories' ? `<label>รูปภาพ (HTTPS URL)<input data-key="imageUrl" type="url" value="${escape(row.imageUrl)}"></label>${current === 'features' ? `<label>คำสั่ง<select data-key="command">${option('', 'ไม่ระบุคำสั่ง', !row.command)}${catalog.commands.map(c => option(c.name, `/${c.name}`, c.name === row.command)).join('')}</select></label><label>หมวด<select data-key="mode">${option('Public', 'Public', row.mode !== 'VIP')}${option('VIP', 'VIP', row.mode === 'VIP')}</select></label>` : ''}<div class="wide" data-preview>${img(row.imageUrl, 'card-image', row.title)}</div>` : `<label class="wide">เซิร์ฟเวอร์ในหมวด<select data-key="guildIds" multiple>${(status.servers || []).map(g => option(g.id, g.name, (row.guildIds || []).includes(g.id))).join('')}</select><small>เลือกหลายรายการ: Ctrl / ⌘ + คลิก</small></label>`}</div></article>`).join('') || empty('ยังไม่มีรายการ กด “เพิ่มรายการ” เพื่อเริ่มต้น');
     document.querySelectorAll('[data-index] [data-key]').forEach(input => input.oninput = () => { const row = data[current][Number(input.closest('[data-index]').dataset.index)]; row[input.dataset.key] = input.type === 'checkbox' ? input.checked : input.multiple ? [...input.selectedOptions].map(o => o.value) : input.value; if (input.dataset.key === 'imageUrl') input.closest('[data-index]').querySelector('[data-preview]').innerHTML = img(row.imageUrl, 'card-image', row.title); });
     document.querySelectorAll('[data-delete]').forEach(b => b.onclick = () => { data[current].splice(Number(b.dataset.delete), 1); render(); });
@@ -220,7 +270,7 @@ async function start() {
   if (requests[4].status === 'fulfilled') ownerProfiles = requests[4].value.owners;
   if (session.user) { document.querySelector('#account-link').href = '/dashboard'; document.querySelector('#account-link').textContent = `${session.user.name} · Dashboard`; document.querySelector('#logout').hidden = false; document.querySelector('#admin-link').hidden = !session.owner; }
   try {
-    if (route === '/commands') commandPage(); else if (route === '/servers') serverPage(); else if (route === '/dashboard') await dashboard(); else if (route === '/admin') await admin(); else if (route === '/features') app.innerHTML = `<div class="container">${head('EXPLORE DEVIL', 'ฟีเจอร์', 'ระบบและคำสั่งต่าง ๆ ของ Devil พร้อมภาพและรายละเอียด')}<div class="grid">${content.features.map(featureCard).join('')}</div>${content.features.length ? '' : empty(requests[2].status === 'rejected' ? 'ยังไม่สามารถโหลดฟีเจอร์ได้' : 'ทีมงานยังไม่ได้เผยแพร่ฟีเจอร์')}</div>`; else if (route === '/updates') app.innerHTML = `<div class="container">${head('DEVIL CHANGELOG', 'ข่าวอัปเดต', 'ติดตามเวอร์ชันใหม่ ฟีเจอร์ และประกาศจากทีมงาน')}<div class="timeline">${content.updates.slice().reverse().map(updateCard).join('')}</div>${content.updates.length ? '' : empty(requests[2].status === 'rejected' ? 'ยังไม่สามารถโหลดข่าวอัปเดตได้' : 'ยังไม่มีข่าวอัปเดต')}</div>`; else homepage();
+    if (route === '/commands') commandPage(); else if (route === '/servers') serverPage(); else if (route === '/dashboard') await dashboard(); else if (route === '/admin') await admin(); else if (route === '/owner') await ownerPage(); else if (route === '/features') app.innerHTML = `<div class="container">${head('EXPLORE DEVIL', 'ฟีเจอร์', 'ระบบและคำสั่งต่าง ๆ ของ Devil พร้อมภาพและรายละเอียด')}<div class="grid">${content.features.map(featureCard).join('')}</div>${content.features.length ? '' : empty(requests[2].status === 'rejected' ? 'ยังไม่สามารถโหลดฟีเจอร์ได้' : 'ทีมงานยังไม่ได้เผยแพร่ฟีเจอร์')}</div>`; else if (route === '/updates') app.innerHTML = `<div class="container">${head('DEVIL CHANGELOG', 'ข่าวอัปเดต', 'ติดตามเวอร์ชันใหม่ ฟีเจอร์ และประกาศจากทีมงาน')}<div class="timeline">${content.updates.slice().reverse().map(updateCard).join('')}</div>${content.updates.length ? '' : empty(requests[2].status === 'rejected' ? 'ยังไม่สามารถโหลดข่าวอัปเดตได้' : 'ยังไม่มีข่าวอัปเดต')}</div>`; else homepage();
   } catch (e) { app.innerHTML = `<div class="container">${head('DEVIL BOT', 'ไม่สามารถโหลดข้อมูล', 'กรุณาลองอีกครั้ง')}<div class="error">${escape(e.message)}</div><button class="button primary" onclick="location.reload()">ลองใหม่</button></div>`; }
 }
 start(); if (route === '/') setInterval(refreshLive, 10000);

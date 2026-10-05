@@ -2,7 +2,36 @@
 // Functions here deliberately use the bot's existing handlers and live data.
 if (IS_PUBLIC_BOT) {
   const { startDashboardServer } = require('./website-dashboard');
-  startDashboardServer({ client, data, saveData, async publish(system, guild, member, config) {
+  startDashboardServer({ client, data, saveData,
+    ownerGuildIds: () => [...PUBLIC_MAIN_GUILD_ID_SET],
+    ownerReloadFiles: () => [...RELOADABLE_MODULES],
+    async executeOwner(command, guild, member, values) {
+      if (command === 'reload') {
+        const result = await reloadBotRuntime(values.file || '');
+        return { message: `Reload สำเร็จ: ${result.target} · Sync ${result.commandCount} คำสั่ง${result.warnings.length ? `\n${result.warnings.join('\n')}` : ''}` };
+      }
+      if (command === 'setstaus') {
+        const previous = data.botProfile;
+        data.botProfile = { ...(previous || {}), status: previous?.status || 'online', activityType: 'Playing', activityMode: values.mode, activityText: values.mode === 'stats' ? '' : values.custom.trim() };
+        try { await applyBotProfile(); saveData(); }
+        catch (error) { data.botProfile = previous; throw error; }
+        return { message: `ตั้งสถานะแล้ว: ${values.mode === 'stats' ? buildPublicStatsActivityText() : values.custom.trim()}` };
+      }
+      if (command === 'announe-panel') {
+        const stored = data.announceConfigs?.[guild.id] || {};
+        (data.announceConfigs ||= {})[guild.id] = { ...stored, ...values, selectedChannelId: values.sendMode === 'edit' ? stored.lastChannelId : null, selectedMessageId: values.sendMode === 'edit' ? stored.lastMessageId : null };
+        saveData();
+        let replyError = null;
+        const interaction = { client, guild, guildId: guild.id, member, memberPermissions: member.permissions, user: member.user,
+          customId: 'announce:send', isButton: () => true, inGuild: () => true,
+          async reply(payload) { replyError = payload.content || 'ไม่สามารถเผยแพร่ประกาศได้'; }, async update() {}, async editReply(payload) { replyError = payload.content; }
+        };
+        await announceSystem.handleButton(interaction);
+        if (replyError) throw new Error(replyError);
+        return { message: values.sendMode === 'edit' ? 'แก้ไขประกาศล่าสุดใน Discord แล้ว' : 'ส่งประกาศใน Discord แล้ว' };
+      }
+      throw new Error('ไม่อนุญาตให้ใช้คำสั่งนี้');
+    }, async publish(system, guild, member, config) {
     let replyError = null;
     const interaction = {
       guild, guildId: guild.id, member, memberPermissions: member.permissions, user: member.user,

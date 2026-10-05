@@ -56,6 +56,12 @@ export default async function handler(req, res) {
       if (!owners().includes(session.userId)) return send(res, 403, { error: 'เฉพาะ Owner เท่านั้น' });
       return send(res, 200, await bridge(req.method === 'GET' ? 'admin-read' : 'admin-write', { userId: session.userId, ...(req.method === 'POST' ? { content: await readBody(req) } : {}) }));
     }
+    if (action === 'owner' && ['GET', 'POST'].includes(req.method)) {
+      if (!owners().includes(session.userId)) return send(res, 403, { error: 'เฉพาะ Owner เท่านั้น' });
+      const guildId = url.searchParams.get('guildId');
+      if (guildId && !/^\d{15,22}$/.test(guildId)) return send(res, 400, { error: 'Guild ID ไม่ถูกต้อง' });
+      return send(res, 200, await bridge(req.method === 'GET' ? 'owner-read' : 'owner-execute', { userId: session.userId, guildId, ...(req.method === 'POST' ? { change: await readBody(req) } : {}) }));
+    }
     if (action === 'guilds' && req.method === 'GET') {
       const [mine, joined] = await Promise.all([guilds(session.token), bridge('guilds')]);
       const botIds = new Set(joined.guilds.map(g => g.id));
