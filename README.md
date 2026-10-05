@@ -19,7 +19,7 @@ OWNER_IDS=123456789012345678
 
 ### Interface
 
-The interface uses original SVG artwork in `public/icons.js` and `public/devil-mark.svg`; no icon library or external icon font is loaded. Owner crowns and the VIP insignia are separate drawings. The server directory fetches Discord independently from OAuth and the CMS, supports retry, and can show the featured guild if the full list is temporarily unavailable. Previously fetched guild lists are marked stale on a temporary Discord failure.
+The interface uses original SVG icons in `public/icons.js`, while the website logo and favicon use your existing Discord bot avatar; no icon library or external icon font is loaded. Owner crowns and the VIP insignia are separate drawings. The server directory fetches Discord independently from OAuth and the CMS, supports retry, and can show the featured guild if the full list is temporarily unavailable. Previously fetched guild lists are marked stale on a temporary Discord failure.
 
 The frontend and APIs are in this repository. The dashboard runs next to the **public** Devil bot so configuration changes update the bot's live in-memory data through its existing `saveData()` function. Do not write directly to `data-public.json` from the website: the running bot could overwrite it. Website content and audit records persist in `website-content.json` on the bot host, rather than an ephemeral Vercel filesystem.
 

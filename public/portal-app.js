@@ -52,21 +52,21 @@ function homepage() {
       <div class="actions"><a class="button primary" href="/dashboard">${icon('settings')} จัดการเซิร์ฟเวอร์ ${icon('external')}</a><a class="button ghost" href="/commands">สำรวจคำสั่ง ${icon('arrow')}</a></div>
       <div class="hero-foot">${icon('shield')} ตั้งค่าได้เอง <span></span> ${icon('crown')} Public & VIP <span></span> ${icon('globe')} พร้อมสำหรับทุกชุมชน</div>
     </div><div class="hero-visual"><div class="visual-glow"></div><div class="visual-grid"></div>
-      <div class="console-board"><div class="console-title"><span class="console-brand"><img src="/devil-mark.svg" alt=""> Devil workspace</span><span class="badge">PREVIEW</span></div>
+      <div class="console-board"><div class="console-title"><span class="console-brand"><img src="/bot-avatar?v=original-logo" alt=""> Devil workspace</span><span class="badge">PREVIEW</span></div>
         <div class="console-body"><div class="console-rail">${icon('grid')}${icon('users')}${icon('shield')}${icon('settings')}</div><div class="console-main"><div class="console-greeting"><span>YOUR SERVER, YOUR RULES.</span><h3>พื้นที่ของชุมชนคุณ</h3></div>
         <div class="console-system"><span class="console-icon">${icon('welcome')}</span><div><b>Welcome & Goodbye</b><small>เริ่มต้นบทสนทนาที่ดี</small></div>${icon('arrow')}</div>
         <div class="console-system"><span class="console-icon">${icon('ticket')}</span><div><b>Support tickets</b><small>ช่วยเหลือสมาชิกอย่างเป็นระบบ</small></div>${icon('arrow')}</div>
         <div class="console-system"><span class="console-icon">${icon('shield')}</span><div><b>Server protection</b><small>ชุมชนปลอดภัย สบายใจทุกวัน</small></div>${icon('arrow')}</div>
         <div class="console-bottom">${icon('command')} คำสั่งพร้อมใช้ <span>Public <i></i> VIP</span></div></div></div></div>
       <div class="visual-float">${icon('shield')}<div><b>Built around your people.</b><small>ให้ทุกคนรู้สึกเป็นส่วนหนึ่ง</small></div></div>
-      <div class="visual-stamp">${icon('spark')} MADE FOR COMMUNITY</div>
+      <div class="visual-stamp">${icon('community')} MADE FOR COMMUNITY</div>
     </div></section>
     <section class="stats-bar"><div class="stat"><span class="stat-icon">${icon('server')}</span><div><div class="metric">${status.servers ? number(servers.length) : '—'}</div><p>เซิร์ฟเวอร์ที่ใช้ Devil</p></div></div><div class="stat"><span class="stat-icon">${icon('users')}</span><div><div class="metric">${number(members)}</div><p>สมาชิกในชุมชน</p></div></div><div class="stat"><span class="stat-icon">${icon('command')}</span><div><div class="metric">${number(catalog.commands.length)}</div><p>คำสั่ง Public & VIP</p></div></div><div class="stat"><span class="stat-icon">${icon('activity')}</span><div><div id="live-status" class="metric status">กำลังตรวจสอบ</div><p id="live-ping">สถานะบอทแบบสด</p></div></div></section>
     <section class="section">${sectionHead('THE COMMUNITY TOOLKIT', 'รายละเอียดเล็ก ๆ ที่ทำให้ชุมชนดีขึ้น', 'จากวันแรกที่เข้าร่วม จนถึงทุกวันที่เติบโตไปด้วยกัน', '/features')}<div class="grid">${features.map(featureCard).join('')}</div></section>
     <section class="section owner-section">${sectionHead('THE PEOPLE BEHIND DEVIL', 'Meet the Owner', 'รู้จักผู้ดูแลที่อยู่เบื้องหลังชุมชนของคุณ')}<div class="owner-grid">${ownerProfiles.map(o => `<article class="owner-card">${profileCard(o)}</article>`).join('')}</div>${ownerProfiles.length ? '' : empty('ยังไม่มีโปรไฟล์ Owner ที่พร้อมแสดง')}</section>
     <section class="section">${sectionHead('PART OF SOMETHING BIGGER', 'ชุมชนที่เติบโตไปกับ Devil', 'พบกับเซิร์ฟเวอร์ที่ให้ Devil เป็นส่วนหนึ่งของทุกวัน', '/servers')}<div class="grid">${servers.slice(0, 3).map(serverCard).join('')}</div>${servers.length ? '' : empty('ยังไม่สามารถโหลดข้อมูลเซิร์ฟเวอร์ได้')}</section>
     ${content.updates.length ? `<section class="section">${sectionHead('FRESH FROM DEVIL', 'อัปเดตล่าสุด', 'ติดตามสิ่งใหม่จากทีม Devil', '/updates')}<div class="timeline">${content.updates.slice().reverse().slice(0, 2).map(updateCard).join('')}</div></section>` : ''}
-    <section class="cta-strip"><div class="cta-emblem">${icon('spark')}</div><div><div class="section-label">NEXT CHAPTER STARTS HERE</div><h2>ชุมชนในแบบของคุณ เริ่มที่นี่.</h2><p>เชื่อมต่อ Discord แล้วให้ Devil ช่วยดูแลส่วนที่เหลือ</p></div><a class="button primary" href="/dashboard">เริ่มต้นใช้งาน ${icon('external')}</a></section>
+    <section class="cta-strip"><div class="cta-emblem">${icon('community')}</div><div><div class="section-label">NEXT CHAPTER STARTS HERE</div><h2>ชุมชนในแบบของคุณ เริ่มที่นี่.</h2><p>เชื่อมต่อ Discord แล้วให้ Devil ช่วยดูแลส่วนที่เหลือ</p></div><a class="button primary" href="/dashboard">เริ่มต้นใช้งาน ${icon('external')}</a></section>
   </div>`;
   bindProfiles(); refreshLive();
 }
