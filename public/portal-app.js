@@ -24,7 +24,16 @@ document.querySelector('#year').textContent = new Date().getFullYear();
 document.querySelectorAll('#navigation a').forEach(a => a.classList.toggle('active', a.getAttribute('href') === route));
 document.querySelector('#menu-toggle').onclick = event => { const open = document.querySelector('#navigation').classList.toggle('open'); event.currentTarget.setAttribute('aria-expanded', String(open)); };
 try { document.documentElement.dataset.theme = localStorage.getItem('devil-portal-theme') || 'dark'; } catch {}
-document.querySelector('#theme-toggle').onclick = () => { const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = theme; try { localStorage.setItem('devil-portal-theme', theme); } catch {} };
+const themeButton = document.querySelector('#theme-toggle');
+function updateThemeButton() {
+  const dark = document.documentElement.dataset.theme !== 'light';
+  const label = dark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด';
+  themeButton.setAttribute('aria-label', label);
+  themeButton.title = label;
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#0a1018' : '#f5f9fd';
+}
+updateThemeButton();
+themeButton.onclick = () => { const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = theme; updateThemeButton(); try { localStorage.setItem('devil-portal-theme', theme); } catch {} };
 const dialog = document.querySelector('#profile-dialog');
 dialog.querySelector('button').onclick = () => dialog.close();
 dialog.onclick = event => { if (event.target === dialog) dialog.close(); };

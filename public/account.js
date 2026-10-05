@@ -1,5 +1,8 @@
 /* Shared Discord account controls for the portal and the policy/support pages. */
 (() => {
+  document.querySelectorAll('#theme-toggle, .theme-toggle').forEach(button => {
+    button.innerHTML = window.DevilIcons.render('theme');
+  });
   let session = { user: null };
   const buttons = [...document.querySelectorAll('[data-logout]')];
   buttons.forEach(button => {

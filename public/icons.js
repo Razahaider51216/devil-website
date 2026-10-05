@@ -6,7 +6,7 @@
     menu: '<path d="M4 7h16M4 12h10M4 17h16"/>',
     close: '<path d="m7 7 10 10M17 7 7 17"/>',
     logout: '<path d="M10 4H5v16h5m3-12 4 4-4 4m-4-4h12"/>',
-    theme: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/>',
+    theme: '<g class="theme-sun"><circle cx="12" cy="12" r="4.5" fill="currentColor" fill-opacity=".12"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><g class="theme-moon"><path d="M14.3 3.1a8.4 8.4 0 1 0 6.6 11.2 7.2 7.2 0 0 1-6.6-11.2Z" fill="currentColor" fill-opacity=".1"/><path d="M6.4 13.4a5.8 5.8 0 0 0 4.2 4.2" opacity=".45"/></g>',
     command: '<path d="m5 7 5 5-5 5m9 0h5"/><path d="M3 3h18v18H3z" opacity=".35"/>',
     server: '<rect x="4" y="3" width="16" height="7" rx="2"/><rect x="4" y="14" width="16" height="7" rx="2"/><path d="M8 6.5h.01M8 17.5h.01m4-11h5m-5 11h5M12 10v4"/>',
     users: '<path d="M4 20v-2a5 5 0 0 1 10 0v2m3-11a3 3 0 0 1 0 6m1 2a4 4 0 0 1 3 3"/><circle cx="9" cy="8" r="4"/>',
