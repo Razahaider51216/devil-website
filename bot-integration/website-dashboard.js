@@ -65,7 +65,7 @@ function validateContent(input) {
       const record = { id: row.id, title: row.title, body, imageUrl, published: row.published === true, command: String(row.command || '').slice(0, 100), mode: row.mode === 'VIP' ? 'VIP' : 'Public', date: Number.isFinite(Date.parse(row.date)) ? new Date(row.date).toISOString() : new Date().toISOString() };
       if (group === 'features' && row.previewSource) {
         const { guildId, channelId, system } = row.previewSource;
-        if (!/^\d{15,22}$/.test(guildId || '') || !/^\d{15,22}$/.test(channelId || '') || !['welcome', 'ticket', 'verify', 'shop'].includes(system)) fail(400, 'กรุณาเลือกระบบ เซิร์ฟเวอร์ และช่องต้นทางของตัวอย่างให้ครบ');
+        if (!/^\d{15,22}$/.test(guildId || '') || !/^\d{15,22}$/.test(channelId || '') || !['welcome', 'ticket', 'verify', 'shop', 'province'].includes(system)) fail(400, 'กรุณาเลือกระบบ เซิร์ฟเวอร์ และช่องต้นทางของตัวอย่างให้ครบ');
         record.previewSource = { guildId, channelId, system };
         record.hidePreviewImages = row.hidePreviewImages === true;
       }

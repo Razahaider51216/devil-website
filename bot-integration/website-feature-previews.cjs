@@ -1,9 +1,10 @@
 /* Public feature snapshots contain display data only, never payment details or
  * member records. Sources must be configured channels managed by the Owner. */
 const { captureMessage } = require('./website-feature-message.cjs');
+const provinceRegions = require('./website-province-regions.json');
 const types = [
   { id: 'welcome', label: 'Welcome / Goodbye' }, { id: 'ticket', label: 'Ticket' },
-  { id: 'verify', label: 'Verify' }, { id: 'shop', label: 'Shop · VIP' }
+  { id: 'verify', label: 'Verify' }, { id: 'shop', label: 'Shop · VIP' }, { id: 'province', label: 'เลือกภูมิภาค / จังหวัด' }
 ];
 const text = (value, max = 2000) => String(value || '').slice(0, max);
 const image = value => { try { const url = new URL(value); return url.protocol === 'https:' && url.href.length <= 2048 ? url.href : ''; } catch { return ''; } };
@@ -30,12 +31,13 @@ function createFeaturePreviews({ client, data, isOwner, premium, images }) {
     }
     if (system === 'ticket') return [data.ticketSetupConfigs?.[id], ...Object.values(data.settings || {}).filter(row => row?.guildId === id)].filter(Boolean).map(config => ({ channelId: config.channelId, config }));
     if (system === 'verify') return [...Object.values(data.verifyPanels || {}).filter(row => row?.guildId === id).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)), data.webVerifyConfigs?.[id]].filter(Boolean).map(config => ({ channelId: config.channelId, config }));
+    if (system === 'province') { const config = data.provinceRolePanels?.[id]; return config ? [{ channelId: config.channelId, config }] : []; }
     if (system === 'shop') {
       if (!premium(id)) return [];
       const config = data.shops?.[id];
       return config ? [...Object.values(config.panels || {}), { channelId: config.publishChannelId }].map(row => ({ channelId: row.channelId, config })) : [];
     }
-    fail(400, 'เลือกระบบ Welcome, Ticket, Verify หรือ Shop');
+    fail(400, 'เลือกระบบ Welcome, Ticket, Verify, Shop หรือภูมิภาค / จังหวัด');
   }
   function visibleSources(guild, member, system) {
     const seen = new Set();
@@ -51,6 +53,7 @@ function createFeaturePreviews({ client, data, isOwner, premium, images }) {
     if (system === 'welcome') return { ...common, title: source.event === 'leave' ? 'แล้วพบกันใหม่' : `ยินดีต้อนรับสู่ ${text(guild.name, 100)}`, description: source.event === 'leave' ? 'ขอบคุณที่เป็นส่วนหนึ่งของชุมชน' : 'ยินดีต้อนรับสมาชิกตัวอย่างเข้าสู่ชุมชน', welcomeEvent: source.event, enabled: true, websiteUrl: image(c.websiteUrl) };
     if (system === 'ticket') return { ...common, title: text(c.title || 'Ticket', 256), description: text(c.description || 'กดปุ่มด้านล่างเพื่อสร้าง Ticket'), label: text(c.buttonLabel || 'Create Ticket', 80), buttonEmoji: text(c.buttonEmoji, 100), buttonStyle: ['Primary', 'Secondary', 'Success', 'Danger'].includes(c.buttonStyle) ? c.buttonStyle.toLowerCase() : 'primary', autoReplies: (Array.isArray(c.autoReplies) ? c.autoReplies : String(c.autoReplies || '').split('\n')).map(v => text(v)).filter(Boolean).slice(0, 10) };
     const role = id => text(guild.roles.cache.get(id)?.name || 'ยศตัวอย่าง', 100);
+    if (system === 'province') return { ...common, title: 'รับยศตามภูมิภาคและจังหวัด', description: '- เลือกบทบาทภูมิภาคและจังหวัด\n- กดเมนูด้านล่างแล้วเลือก\n- มีปุ่มรีเซ็ตเมื่อเลือกผิดจังหวัด', regions: provinceRegions, regionEmoji: '<a:pin:1550031150808957003>', provinceEmoji: '<:discotoolsxyzicon7:1550029014599471136>', resetEmoji: '<:discotoolsxyzicon20:1550029010845700187>' };
     if (system === 'verify') return { ...common, title: text(c.title || 'Verify', 256), description: text(c.description || 'กดปุ่มด้านล่างเพื่อยืนยันรับยศ'), label: text(c.buttonLabel || 'รับยศ', 80), buttonEmoji: text(c.buttonEmoji, 100), verifyMode: c.mode === 'emoji' ? 'emoji' : 'button', roles: (c.roles || (c.roleIds || []).map(roleId => ({ roleId }))).slice(0, 25).map((r, i) => ({ name: role(r.roleId), emoji: text(r.emoji || `${i + 1}️⃣`, 100) })), successMessage: text(c.successMessage).replace(/<@&\d+>/g, '@ยศตัวอย่าง') };
     // Intentionally omit c.payment, orders, customer data and transaction refs.
     return { ...common, title: text(c.storefrontTitle || 'Devil Shop', 256), description: text(c.storefrontDescription || 'เลือกสินค้าที่ต้องการสั่งซื้อจากเมนูด้านล่าง'), imageUrl: image(c.bannerUrl), products: Object.values(c.products || {}).slice(0, 25).map((p, i) => ({ id: `product_${i}`, name: text(p.name, 100), description: text(p.description), price: Number.isFinite(Number(p.price)) ? Number(p.price) : 0, role: p.roleId ? role(p.roleId) : 'สินค้าโดยผู้ดูแล', duration: p.durationMonths ? `${Number(p.durationMonths)} เดือน` : 'ถาวร' })) };

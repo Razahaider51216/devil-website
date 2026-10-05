@@ -36,7 +36,8 @@ function createPreviewImages(directory) {
         else if (typeof value === 'object') Object.values(value).forEach(item => collect(item, depth + 1));
       }
       const sourceChannel = guild.channels.cache.get(source.channelId);
-      const records = system === 'verify' ? data.verifyPanels : system === 'ticket' ? data.settings : system === 'shop' ? data.shops?.[guild.id]?.panels : {};
+      const province = data.provinceRolePanels?.[guild.id];
+      const records = system === 'verify' ? data.verifyPanels : system === 'ticket' ? data.settings : system === 'shop' ? data.shops?.[guild.id]?.panels : system === 'province' && province?.messageId ? { [province.messageId]: province } : {};
       const ids = Object.entries(records || {}).filter(([, row]) => row?.channelId === source.channelId).map(([id]) => id).slice(-3);
       for (const id of ids) {
         try { const message = await sourceChannel?.messages?.fetch(id); if (message) collect(message.toJSON ? message.toJSON() : message); } catch {}

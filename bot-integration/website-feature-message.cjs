@@ -3,7 +3,8 @@ const safeUrl = value => { try { const url = new URL(value); return url.protocol
 async function captureMessage({ client, guild, member, source, system, data, preview, images }) {
   const channel = guild.channels.cache.get(source.channelId);
   if (!channel?.messages?.fetch) return null;
-  const entries = system === 'verify' ? data.verifyPanels : system === 'ticket' ? data.settings : system === 'shop' ? data.shops?.[guild.id]?.panels : {};
+  const provinceConfig = data.provinceRolePanels?.[guild.id];
+  const entries = system === 'verify' ? data.verifyPanels : system === 'ticket' ? data.settings : system === 'shop' ? data.shops?.[guild.id]?.panels : system === 'province' && provinceConfig?.messageId ? { [provinceConfig.messageId]: { guildId: guild.id, channelId: provinceConfig.channelId } } : {};
   const ids = Object.entries(entries || {}).filter(([, row]) => row.channelId === channel.id && (!row.guildId || row.guildId === guild.id)).map(([id]) => id).reverse();
   let message;
   for (const id of ids.slice(0, 5)) {
@@ -18,9 +19,17 @@ async function captureMessage({ client, guild, member, source, system, data, pre
   const raw = message.toJSON ? message.toJSON() : message;
   const clean = (value, max = 4000) => String(value || '').slice(0, max).replace(/<@&(\d+)>/g, (_, id) => `@${guild.roles.cache.get(id)?.name || 'ยศตัวอย่าง'}`).replace(/<@!?\d+>/g, '@สมาชิกตัวอย่าง').replace(/<#\d+>/g, '#ช่องตัวอย่าง');
   const emoji = value => value?.id && /^\d{17,20}$/.test(value.id) ? `<${value.animated ? 'a' : ''}:${String(value.name || 'emoji').replace(/\W/g, '')}:${value.id}>` : clean(value?.name, 100);
+  const usedMedia = new Set();
   const media = async value => {
-    const url = safeUrl(value?.url || value?.proxy_url || value);
+    let sourceUrl = value?.url || value?.proxy_url || value;
+    if (typeof sourceUrl === 'string' && sourceUrl.startsWith('attachment://')) {
+      const name = sourceUrl.slice('attachment://'.length);
+      const attachment = (Array.isArray(raw.attachments) ? raw.attachments : Object.values(raw.attachments || {})).find(a => (a.filename || a.name) === name);
+      sourceUrl = attachment?.url;
+    }
+    const url = safeUrl(sourceUrl);
     if (!url) return null;
+    usedMedia.add(url);
     const result = { url };
     if (images) { const id = await images.capture(url, { guild, member, source, system, data }); if (id) result.imageId = id; }
     return result;
@@ -48,6 +57,11 @@ async function captureMessage({ client, guild, member, source, system, data, pre
       out.options = (c.options || []).slice(0, 25).map((row, i) => ({ label: clean(row.label, 100), description: clean(row.description, 100), emoji: emoji(row.emoji), value: system === 'shop' && products.includes(row.value) ? `product_${products.indexOf(row.value)}` : `option_${i}` }));
       if (!out.options.length) out.options = [{ label: type === 6 ? 'ยศตัวอย่าง' : type === 8 ? 'ช่องตัวอย่าง' : 'สมาชิกตัวอย่าง', description: 'ตัวอย่างจำลอง', value: 'option_0' }];
       out.action = system === 'shop' ? 'shop-product' : 'sample-select';
+      if (system === 'province') {
+        const provinceMenu = String(c.custom_id || '').startsWith('province_role:province:');
+        out.action = provinceMenu ? 'province-select' : 'province-region';
+        out.options = (c.options || []).slice(0, 25).map((row, i) => ({ ...out.options[i], value: clean(row.value, 100) }));
+      }
     } else return null;
     return out;
   }
@@ -60,7 +74,7 @@ async function captureMessage({ client, guild, member, source, system, data, pre
     image: await media(e.image), thumbnail: await media(e.thumbnail), timestamp: e.timestamp || ''
   })));
   const components = (await Promise.all((raw.components || []).slice(0, 40).map(c => component(c)))).filter(Boolean);
-  const attachments = (await Promise.all((Array.isArray(raw.attachments) ? raw.attachments : Object.values(raw.attachments || {})).slice(0, 10).filter(a => /^image\//.test(a.content_type || a.contentType || '') || /\.(png|jpe?g|webp|gif)$/i.test(a.filename || a.name || '')).map(a => media(a)))).filter(Boolean);
+  const attachments = (await Promise.all((Array.isArray(raw.attachments) ? raw.attachments : Object.values(raw.attachments || {})).slice(0, 10).filter(a => !usedMedia.has(safeUrl(a.url)) && (/^image\//.test(a.content_type || a.contentType || '') || /\.(png|jpe?g|webp|gif)$/i.test(a.filename || a.name || ''))).map(a => media(a)))).filter(Boolean);
   return { content: clean(raw.content), embeds, components, attachments };
 }
 function hasImage(value, id) {

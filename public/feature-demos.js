@@ -76,6 +76,7 @@
     { id: 'welcome', name: 'Welcome', subtitle: 'ต้อนรับและอำลาสมาชิก', icon: 'welcome', command: 'set-welcom', title: 'Welcome / Goodbye', description: 'เริ่มต้นชุมชนด้วยข้อความต้อนรับ พร้อมรูปภาพและข้อมูลสมาชิก', color: '#167aca' },
     { id: 'ticket', name: 'Ticket', subtitle: 'เปิดห้องติดต่อทีมงาน', icon: 'ticket', command: 'set-ticket', title: 'Ticket', description: 'กดปุ่มด้านล่างเพื่อสร้าง Ticket', label: 'Create Ticket', color: '#ff0000' },
     { id: 'verify', name: 'Verify', subtitle: 'กดปุ่มหรือ Reaction รับยศ', icon: 'shield', command: 'set-verify', title: 'Verify', description: 'กดปุ่มด้านล่างเพื่อยืนยันรับยศ', label: 'รับยศ', color: '#000000' },
+    { id: 'province', name: 'ภูมิภาค / จังหวัด', subtitle: 'เลือกภูมิภาคและรับยศจังหวัด', icon: 'globe', command: 'set-province', title: 'รับยศตามภูมิภาคและจังหวัด', description: '- เลือกบทบาทภูมิภาคและจังหวัด\n- กดเมนูด้านล่างแล้วเลือก\n- มีปุ่มรีเซ็ตเมื่อเลือกผิดจังหวัด', color: '#167aca' },
     { id: 'shop', name: 'Shop', subtitle: 'เลือกสินค้าและช่องทางชำระ', icon: 'shop', command: 'set-shop', title: 'Devil Shop', description: 'เลือกสินค้าที่ต้องการสั่งซื้อจากเมนูด้านล่าง', color: '#167aca', vip: true }
   ];
   const sampleProducts = [
@@ -88,7 +89,7 @@
     const uid = `feature-demo-${++mounts}`;
     let active = preview && modes.some(mode => mode.id === preview.system) ? preview.system : 'welcome';
     const products = preview?.products || sampleProducts;
-    const fresh = mode => ({ ...mode, buttonEmoji: '', welcomeEvent: 'join', enabled: true, ticketOpen: false, closing: false, verifyMode: 'button', claimed: [], product: '', payment: '', paid: false });
+    const fresh = mode => ({ ...mode, buttonEmoji: '', welcomeEvent: 'join', enabled: true, ticketOpen: false, closing: false, verifyMode: 'button', claimed: [], product: '', payment: '', paid: false, region: '', province: '', regionEmoji: '<a:pin:1550031150808957003>', provinceEmoji: '<:discotoolsxyzicon7:1550029014599471136>', resetEmoji: '<:discotoolsxyzicon20:1550029010845700187>' });
     const states = Object.fromEntries(modes.map(mode => [mode.id, fresh(mode)]));
     if (preview) Object.assign(states[active], preview, { color: /^#[0-9a-f]{6}$/i.test(preview.color || '') ? preview.color : '#167aca' });
     root.innerHTML = `<section class="feature-playground" aria-labelledby="demo-heading"><div class="demo-heading"><div><div class="section-label">TRY DEVIL LIVE</div><h2 id="demo-heading">ลองกด แล้วดูว่า Devil ทำอะไรได้</h2><p>ตัวอย่างจำลองจากระบบบอท เปลี่ยนการตั้งค่าและกดเล่นได้เลย</p></div><span class="badge demo-badge">${icon('grid')} INTERACTIVE DEMO</span></div><div class="demo-tabs" role="tablist" aria-label="เลือกระบบตัวอย่าง">${modes.map(m => `<button type="button" role="tab" id="demo-tab-${m.id}" data-demo-tab="${m.id}" aria-controls="demo-workspace" aria-selected="${m.id === active}" tabindex="${m.id === active ? 0 : -1}">${icon(m.icon)}<span>${m.name}</span>${m.vip ? '<small>VIP</small>' : ''}</button>`).join('')}</div><div id="demo-workspace" class="demo-workspace" role="tabpanel" aria-labelledby="demo-tab-welcome"><aside class="demo-settings"></aside><div class="demo-preview"><div class="demo-channel"><span>${icon('chat')}<b data-demo-channel></b></span><small>เซิร์ฟเวอร์ตัวอย่าง</small></div><div class="demo-messages"><div class="demo-message"><img class="demo-avatar" src="/bot-avatar?v=original-logo" alt="โลโก้ Devil"><div class="demo-message-content"><div class="demo-author"><b>Devil</b><span>APP ${icon('check')}</span><time>วันนี้ เวลา 12:00</time></div><div data-demo-stage></div></div></div></div><div class="demo-preview-footer"><span class="demo-status-dot"></span>โหมดจำลอง · ไม่ส่งข้อความหรือทำรายการจริง</div></div></div><div class="demo-bottom"><p data-demo-hint aria-live="polite"></p><button type="button" class="button small ghost" data-demo-action="reset">${icon('reload')} เริ่มใหม่</button></div></section>`;
@@ -139,6 +140,24 @@
       const embeds = (message.embeds || []).map(e => `<div class="demo-embed" style="--embed-color:${/^#[0-9a-f]{6}$/i.test(e.color || '') ? e.color : states[active].color}">${e.author ? `<div class="demo-embed-author">${mediaHtml(e.author.icon, 'demo-avatar-icon')}${richText(e.author.name, { inline: true })}</div>` : ''}${mediaHtml(e.thumbnail, 'demo-banner demo-thumbnail')}${e.title ? `<h3>${richText(e.title, { inline: true })}</h3>` : ''}${e.description ? `<div class="demo-embed-body">${richText(e.description)}</div>` : ''}<div class="demo-fields">${(e.fields || []).map(f => `<div ${f.inline ? '' : 'class="demo-field-wide"'}><b>${richText(f.name, { inline: true })}</b><div>${richText(f.value)}</div></div>`).join('')}</div>${mediaHtml(e.image)}${e.footer ? `<div class="demo-embed-footer">${mediaHtml(e.footer.icon, 'demo-avatar-icon')}${richText(e.footer.text, { inline: true })}</div>` : ''}</div>`).join('');
       return `<div class="demo-source-message">${message.content ? `<div class="demo-message-text">${richText(message.content)}</div>` : ''}${embeds}${(message.components || []).map(component).join('')}${(message.attachments || []).map(a => mediaHtml(a)).join('')}</div>`;
     }
+    function provinceMessage(s) {
+      const regions = s.regions || window.DevilProvinceRegions || [];
+      const selected = regions.find(r => r.id === s.region);
+      const regionMenu = { type: 3, action: 'province-region', placeholder: '☰ เลือกภูมิภาค', options: [{ label: 'รีเซ็ต / เลือกภูมิภาคใหม่', description: 'ล้างเมนูแล้วกลับมาเลือกภูมิภาคอีกครั้ง', value: 'reset', emoji: s.resetEmoji }, ...regions.map(r => ({ label: r.label, description: r.description, value: r.id, emoji: s.regionEmoji }))] };
+      const menu = selected ? { type: 3, action: 'province-select', placeholder: `☰ เลือกจังหวัดใน${selected.label}`, options: selected.provinces.map(p => ({ label: p, description: `รับยศจังหวัด${p}`, value: p, emoji: s.provinceEmoji })) } : regionMenu;
+      const message = s.message ? JSON.parse(JSON.stringify(s.message)) : { components: [{ type: 17, color: s.color, components: [{ type: 10, content: `## <a:1043552582838267965:1550026571694342276> __${s.title}__` }, { type: 10, content: s.description }, ...(s.imageUrl || s.imageId ? [{ type: 12, items: [{ media: { url: s.imageUrl, imageId: s.imageId } }] }] : []), { type: 1, components: [regionMenu] }] }] };
+      let replaced = false;
+      const update = components => (components || []).map(c => {
+        if ([3, 5, 6, 7, 8].includes(c.type)) { replaced = true; return menu; }
+        if (c.type === 10) c.content = c.content.replace(/^## คุณเลือกภูมิภาค.*$/gm, '').trim();
+        if (c.components) c.components = update(c.components);
+        return c;
+      });
+      message.components = update(message.components);
+      if (!replaced) message.components.push({ type: 1, components: [menu] });
+      if (selected) message.components.push({ type: 10, content: `## คุณเลือกภูมิภาค | \`${selected.label}\` แล้ว` }, { type: 1, components: [regionMenu] });
+      return message;
+    }
     function renderSettings() {
       if (card) return;
       const s = states[active];
@@ -146,15 +165,18 @@
     }
     function renderPreview() {
       const s = states[active];
-      root.querySelector('[data-demo-channel]').textContent = s.ticketOpen ? 'ticket-demo-001' : s.channelName || { welcome: 'welcome', ticket: 'support', verify: 'verify', shop: 'devil-shop' }[active];
+      root.querySelector('[data-demo-channel]').textContent = s.ticketOpen ? 'ticket-demo-001' : s.channelName || { welcome: 'welcome', ticket: 'support', verify: 'verify', shop: 'devil-shop', province: 'เลือกภูมิภาค' }[active];
       if (s.guildName) root.querySelector('.demo-channel small').textContent = s.guildName;
-      root.querySelector('[data-demo-hint]').textContent = { welcome: 'ลองเปลี่ยนเหตุการณ์เพื่อดูข้อความ Welcome และ Goodbye', ticket: 'ลองเปิด Ticket แล้วกดปิดห้องเพื่อดูขั้นตอนยืนยัน', verify: 'ทดลองรับยศ Member / VIP หรือเปลี่ยนเป็นโหมด Reaction', shop: 'เลือกสินค้าจากเมนู แล้วลองกดช่องทางชำระเงิน' }[active];
+      root.querySelector('[data-demo-hint]').textContent = { welcome: 'ลองเปลี่ยนเหตุการณ์เพื่อดูข้อความ Welcome และ Goodbye', ticket: 'ลองเปิด Ticket แล้วกดปิดห้องเพื่อดูขั้นตอนยืนยัน', verify: 'ทดลองรับยศ Member / VIP หรือเปลี่ยนเป็นโหมด Reaction', shop: 'เลือกสินค้าจากเมนู แล้วลองกดช่องทางชำระเงิน', province: 'เลือกภูมิภาค แล้วเลือกจังหวัดเพื่อดูยศตัวอย่าง รีเซ็ตได้เมื่อเลือกผิด' }[active];
       if (active === 'welcome') {
         const joining = s.welcomeEvent === 'join';
         stage.innerHTML = s.enabled ? embed(preview ? s.title : joining ? 'ยินดีต้อนรับสู่ Devil Community' : 'แล้วพบกันใหม่', `<span class="demo-mention">@สมาชิกตัวอย่าง</span><p>${richText(preview ? s.description : joining ? 'ยินดีต้อนรับสมาชิกใหม่ ขอให้สนุกกับชุมชนของเรา!' : 'ขอบคุณที่เป็นส่วนหนึ่งของชุมชน ขอให้โชคดีครับ')}</p><div class="demo-fields"><div><small>สมาชิกในเซิร์ฟเวอร์</small><b>${joining ? '2,235' : '2,234'} คน</b></div><div><small>ชุมชน</small><b>${esc(s.guildName || 'Devil Community')}</b></div></div>`, '', 'welcome-embed-image.png') : notice('ปิดระบบแล้ว จึงไม่มีข้อความต้อนรับหรืออำลาในตัวอย่าง');
       } else if (active === 'ticket') {
         if (!s.ticketOpen) stage.innerHTML = embed(s.title, richText(s.description), `<div class="discord-actions">${button('ticket-open', `${richText(s.buttonEmoji)} ${esc(s.label)}`, s.buttonStyle || 'primary')}</div>`, 'ticket-card-v2.png');
         else stage.innerHTML = embed('Ticket #demo-001', `<span class="demo-mention">@สมาชิกตัวอย่าง</span><p>${richText(s.autoReplies?.join('\n') || 'แจ้งเรื่องที่ต้องการติดต่อไว้ได้เลย ทีมงานจะเข้ามาดูแลครับ')}</p>`, `<div class="discord-actions">${button('ticket-close', `${icon('lock')} ปิด Ticket`, 'danger')}</div>`) + (s.closing ? notice(`ต้องการปิด Ticket นี้หรือไม่?<div class="discord-actions">${button('ticket-confirm', 'ยืนยันปิด Ticket', 'danger')}${button('ticket-cancel', 'ยกเลิก', 'secondary')}</div>`) : notice('สร้างห้อง Ticket ตัวอย่างแล้ว'));
+      } else if (active === 'province') {
+        stage.innerHTML = messageHtml(provinceMessage(s));
+        if (s.province) stage.innerHTML += notice(`เลือกจังหวัด <b>${esc(s.province)}</b> แล้ว\nได้รับยศ <span class="demo-mention">@${esc(s.province)}</span> · ตัวอย่าง`);
       } else if (active === 'verify') {
         const roles = s.roles || [{ name: 'Member', emoji: '1️⃣' }, { name: 'VIP', emoji: '2️⃣' }];
         const actions = roles.map(({ name: role, emoji: reaction }) => s.verifyMode === 'emoji' ? button('verify-role', `${richText(reaction)} <span>${esc(role)}</span> ${s.claimed.includes(role) ? '1' : '0'}`, 'reaction', `data-role="${esc(role)}" aria-pressed="${s.claimed.includes(role)}" aria-label="${esc((s.claimed.includes(role) ? 'ถอดยศ ' : 'รับยศ ') + role)}"`) : button('verify-role', `${richText(s.buttonEmoji)} ${esc(s.label)} · ${esc(role)}`, 'primary', `data-role="${esc(role)}"`)).join('');
@@ -167,7 +189,7 @@
         if (product) stage.innerHTML += `<div class="demo-product">${embed(product.name, `<div class="demo-fields"><div><small>${emoji('price')} ราคา</small><b>฿${Number(product.price).toFixed(2)}</b></div><div><small>ยศที่จะได้รับ</small><b class="demo-mention">@${esc(product.role)}</b></div><div><small>ระยะเวลา</small><b>${esc(product.duration)}</b></div></div>`, `<div class="discord-actions">${button('pay-promptpay', `${emoji('promptpay')} พร้อมเพย์ / โอนเงิน`, 'success')}${button('pay-truemoney', `${emoji('truemoney')} TrueMoney`, 'success')}</div>`)}</div>`;
         if (product && s.payment) stage.innerHTML += notice(s.paid ? `${emoji('success')} ชำระเงินตัวอย่างสำเร็จ · ได้รับยศ <span class="demo-mention">@${esc(product.role)}</span>` : `<b>ออเดอร์ตัวอย่าง · ${esc(product.name)}</b><br>ช่องทาง: ${s.payment === 'promptpay' ? 'พร้อมเพย์ / โอนเงิน' : 'TrueMoney'}<br>ยอดรวม ฿${Number(product.price).toFixed(2)}<div class="discord-actions">${button('pay-complete', 'จำลองชำระสำเร็จ', 'success')}${button('pay-cancel', 'ยกเลิก', 'secondary')}</div>`);
       }
-      if (s.message && !s.ticketOpen) {
+      if (s.message && !s.ticketOpen && active !== 'province') {
         const first = stage.firstElementChild;
         const reactions = active === 'verify' && s.verifyMode === 'emoji' ? first?.querySelector('.discord-actions')?.outerHTML || '' : '';
         if (first) first.outerHTML = messageHtml(s.message) + reactions;
@@ -220,9 +242,18 @@
       else if (action === 'ticket-confirm') { s.ticketOpen = false; s.closing = false; }
       else if (action === 'verify-role') { const role = control.dataset.role; s.claimed = s.claimed.includes(role) ? (s.verifyMode === 'emoji' ? s.claimed.filter(r => r !== role) : s.claimed) : [...s.claimed, role]; }
       else if (action === 'shop-product') { s.product = control.dataset.product; s.payment = ''; s.paid = false; }
+      else if (action === 'province-region') {
+        const value = control.dataset.product;
+        if (value === 'reset' || (s.regions || window.DevilProvinceRegions || []).some(r => r.id === value)) { s.region = value === 'reset' ? '' : value; s.province = ''; }
+      }
+      else if (action === 'province-select') {
+        const region = (s.regions || window.DevilProvinceRegions || []).find(r => r.id === s.region);
+        if (region?.provinces.includes(control.dataset.product)) s.province = control.dataset.product;
+      }
       else if (action === 'sample-button' || action === 'sample-select') s.sampleResult = `ตัวอย่าง: ${control.textContent.trim()}`;
       else if (action.startsWith('pay-')) { s.payment = action === 'pay-cancel' ? '' : action === 'pay-complete' ? s.payment : action.slice(4); s.paid = action === 'pay-complete'; }
       renderPreview();
+      if (action.startsWith('province-')) stage.querySelector('.demo-select-trigger')?.focus({ preventScroll: true });
       if (action === 'shop-product') stage.querySelector('.demo-select-trigger').focus({ preventScroll: true });
       else if (action.startsWith('ticket-') || action === 'verify-role' || action.startsWith('pay-')) {
         const next = stage.querySelector(`[data-demo-action="${action}"]`) || stage.querySelector('button');

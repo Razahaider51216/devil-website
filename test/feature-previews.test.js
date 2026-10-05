@@ -17,6 +17,7 @@ function fixture() {
     welcomeSettings: { [guildId]: { welcomeChannelId: channelId, imageUrl: 'https://example.com/welcome.png' } },
     ticketSetupConfigs: { [guildId]: { channelId, title: 'Configured Ticket', description: 'Ask our team', buttonLabel: 'Open support', buttonEmoji: '<:support:1537885070898237450>', buttonStyle: 'Success', autoReplies: ['Hello from configured support'] } },
     verifyPanels: { message: { guildId, channelId, mode: 'emoji', title: 'Configured verification', roles: [{ roleId, emoji: '✅' }] } },
+    provinceRolePanels: { [guildId]: { channelId, messageId: '555555555555555555', roleIds: { เชียงใหม่: roleId } } },
     shops: { [guildId]: { storefrontTitle: 'Configured shop', panels: { message: { channelId } }, products: { p: { name: 'Configured product', price: 129, roleId, durationMonths: 2 } }, payment: { accountName: 'PRIVATE BANK ACCOUNT', paymentNumber: 'PRIVATE NUMBER' }, orders: { private: 'PRIVATE CUSTOMER' } } }
   };
   const client = { guilds: { cache: new Map([[guildId, guild]]) } };
@@ -26,12 +27,15 @@ test('Owner preview sources require membership and visible configured channels a
   const f = fixture();
   const api = createFeaturePreviews({ ...f, isOwner: id => id === userId, premium: () => true });
   assert.equal((await api.read({ userId })).guilds[0].id, guildId);
-  assert.equal((await api.read({ userId, guildId })).systems.length, 4);
+  assert.equal((await api.read({ userId, guildId })).systems.length, 5);
   const read = system => api.read({ userId, guildId, channelId, system });
   assert.equal((await read('ticket')).preview.label, 'Open support');
   assert.equal((await read('verify')).preview.verifyMode, 'emoji');
   assert.equal((await read('verify')).preview.roles[0].name, 'Real configured role');
   const shop = (await read('shop')).preview;
+  const province = (await read('province')).preview;
+  assert.equal(province.regions.length, 6); assert.equal(province.regions.flatMap(r => r.provinces).length, 77);
+  assert.ok(!JSON.stringify(province).includes(roleId));
   assert.equal(shop.products[0].price, 129);
   assert.equal(shop.products[0].duration, '2 เดือน');
   assert.ok(!JSON.stringify(shop).includes('PRIVATE'));

@@ -12,6 +12,7 @@ const tour = await readFile(new URL('../public/tour.js', import.meta.url), 'utf8
 const navigation = await readFile(new URL('../public/navigation.js', import.meta.url), 'utf8');
 const information = await readFile(new URL('../public/information.js', import.meta.url), 'utf8');
 const featureDemos = await readFile(new URL('../public/feature-demos.js', import.meta.url), 'utf8');
+const provinceRegions = await readFile(new URL('../public/province-regions.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function page(route, fixtures = {}) {
@@ -23,7 +24,7 @@ async function page(route, fixtures = {}) {
     const result = fixtures[action] || fallback;
     return { ok: true, json: async () => typeof result === 'function' ? result(url, options) : result };
   };
-  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(navigation); dom.window.eval(information); dom.window.eval(featureDemos); dom.window.eval(script); await flush(); await flush(); return dom;
+  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(navigation); dom.window.eval(information); dom.window.eval(provinceRegions); dom.window.eval(featureDemos); dom.window.eval(script); await flush(); await flush(); return dom;
 }
 test('footer information links open their own content in the shared portal without waiting for Discord or CMS', async () => {
   const rewrites = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8')).rewrites;
@@ -230,6 +231,30 @@ test('Owner saves a cleared image without relying on input events or another unf
     assert.equal(changes.length, 1); assert.equal(changes[0].row.imageUrl, ''); assert.equal(changes[0].group, 'features');
     assert.equal(doc.querySelector('[data-index="1"] [data-key="title"]').value, '');
     assert.ok(doc.querySelector('[data-row-status]').textContent.includes('บันทึก'));
+  } finally { dom.window.close(); }
+});
+
+test('Province demo has all bot provinces, supports selection, switching and reset with independent cards', async () => {
+  const previews = [0, 1].map(id => ({ id: `province-${id}`, title: 'เลือกภูมิภาค', published: true, preview: { system: 'province', title: 'รับยศจังหวัด', description: 'เลือกภูมิภาคและจังหวัด' } }));
+  const dom = await page('/features', { content: { features: previews } });
+  try {
+    const doc = dom.window.document, cards = doc.querySelectorAll('[data-feature-preview]');
+    assert.equal(dom.window.DevilProvinceRegions.length, 6);
+    assert.equal(dom.window.DevilProvinceRegions.flatMap(r => r.provinces).length, 77);
+    const backend = JSON.parse(await readFile(new URL('../bot-integration/website-province-regions.json', import.meta.url), 'utf8'));
+    assert.deepEqual(JSON.parse(JSON.stringify(dom.window.DevilProvinceRegions)), backend);
+    cards[0].querySelector('[data-demo-action="source-menu"]').click();
+    cards[0].querySelector('[data-demo-action="province-region"][data-product="north"]').click();
+    assert.ok(cards[0].textContent.includes('เชียงใหม่')); assert.ok(!cards[1].textContent.includes('เชียงใหม่'));
+    cards[0].querySelector('[data-demo-action="source-menu"]').click();
+    cards[0].querySelector('[data-demo-action="province-select"][data-product="เชียงใหม่"]').click();
+    assert.ok(cards[0].querySelector('.demo-result').textContent.includes('@เชียงใหม่'));
+    cards[0].querySelector('[data-demo-action="province-region"][data-product="south"]').click();
+    assert.equal(cards[0].querySelector('.demo-result'), null); assert.ok(cards[0].textContent.includes('ภูเก็ต'));
+    cards[0].querySelector('[data-demo-action="province-region"][data-product="reset"]').click();
+    assert.equal(cards[0].querySelector('[data-demo-action="province-select"]'), null);
+    assert.equal(cards[0].querySelectorAll('[data-demo-action="province-region"]').length, 7);
+    assert.ok(cards[0].querySelector('.demo-emoji').src.includes('1550026571694342276'));
   } finally { dom.window.close(); }
 });
 
