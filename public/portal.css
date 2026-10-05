@@ -9,6 +9,45 @@
 @media(max-width:760px){.topbar{padding:16px 20px;gap:10px}.container{padding:0 20px}.topbar .brand img{width:31px;height:31px}.hero{grid-template-columns:1fr;gap:65px;padding-top:50px;padding-bottom:60px}.hero h1{font-size:42px;letter-spacing:-1.5px}.hero p{font-size:14px}.hero-visual{min-height:350px;max-width:420px;margin:auto;transform:none;padding:0 6px}.console-board{transform:none}.console-main{padding:20px 16px 17px}.visual-float{left:0;bottom:-14px;padding:12px 15px}.visual-stamp{top:-30px;right:10px}.stats-bar{gap:24px;padding:24px 0}.stat{padding:0 15px;gap:9px}.stat .metric{font-size:23px}.stat .metric.status{font-size:16px;min-height:29px}.stat-icon{width:30px;height:30px;border-radius:8px}.stat-icon .devil-icon{width:16px;height:16px}.stat p{font-size:9px}.section{padding-top:60px}.section-heading h2{font-size:25px}.section-heading>a{font-size:10px}.section-heading{gap:12px}.section-heading p{font-size:12px}.feature-card{padding:0 22px 25px}.feature-art{margin:0 -22px 20px;height:160px}.feature-card>.card-image{margin:0 -22px 20px;width:calc(100% + 44px)}.cta-strip{padding:27px 23px;gap:20px;align-items:start}.cta-emblem{width:49px;height:49px;border-radius:13px}.cta-emblem .devil-icon{width:26px;height:26px}.cta-strip h2{font-size:25px}.owner-grid:has(>.owner-card:nth-child(2):last-child){grid-template-columns:1fr}.page-head h1{font-size:35px}.sidebar button>span{flex:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}:root[data-theme=light] .hero h1 span{background:linear-gradient(100deg,#5097c9,#70add8);background-clip:text;-webkit-background-clip:text}:root[data-theme=light] .badge.vip,:root[data-theme=light] .badge.owner-badge,:root[data-theme=light] .owner-insignia{color:#916018}:root[data-theme=light] .console-board{box-shadow:0 32px 85px #36648510}:root[data-theme=light] .feature-symbol{filter:none}
 .card-image{display:block;height:auto;aspect-ratio:auto;object-fit:contain}
+.nav-invite{display:inline-flex;align-items:center;gap:5px;color:var(--accent)}
+.nav-invite .devil-icon{width:14px;height:14px}
+.invite-button{position:relative;isolation:isolate;display:flex;align-items:center;gap:12px;width:100%;max-width:400px;padding:13px 15px;border:1px solid #49b8ff55;border-radius:13px;background:linear-gradient(115deg,#148dd823,#148dd808),var(--panel);overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s}
+.invite-button:before{content:'';position:absolute;inset:-80% -20%;z-index:-1;background:linear-gradient(115deg,transparent 38%,#8bdcff18 50%,transparent 62%);transform:translateX(-65%);transition:transform .65s ease}
+.invite-button:hover:before,.invite-button:focus-visible:before{transform:translateX(65%)}
+.invite-button:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 8px 30px #168bd819}
+.invite-logo{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:10px;overflow:hidden;box-shadow:0 4px 14px #0003}
+.invite-logo img{width:100%;height:100%;object-fit:contain}
+.invite-copy{flex:1;min-width:0}
+.invite-copy b{display:block;font-size:13px;font-weight:600;color:var(--text)}
+.invite-copy small{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.invite-arrow{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#168bd814;color:var(--accent);transition:transform .2s}
+.invite-arrow .devil-icon{width:17px;height:17px}
+.invite-button:hover .invite-arrow{transform:translate(2px,-2px)}
+.hero .actions .invite-button{grid-column:1/-1}
+.tour-overlay{position:fixed;inset:0;z-index:200;touch-action:none}
+.tour-overlay.tour-centered{background:#040c16b8;backdrop-filter:blur(5px)}
+.tour-spotlight{position:fixed;border:2px solid var(--accent);border-radius:15px;box-shadow:0 0 0 9999px #040c16bb,0 0 30px #48b5ff28;pointer-events:none;transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease}
+.tour-panel{position:fixed;z-index:1;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;touch-action:pan-y;padding:25px;border:1px solid #49b8ff55;border-radius:21px;background:radial-gradient(ellipse at 0 0,#168bd815,transparent 70%),var(--panel);box-shadow:0 25px 90px #0007;animation:tour-arrive .25s ease}
+.tour-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px;font:9px 'Space Grotesk',sans-serif;letter-spacing:1.4px;color:var(--muted)}
+.tour-count{color:var(--accent);font-size:11px;letter-spacing:.5px}
+.tour-symbol{width:49px;height:49px;border:1px solid #49b8ff30;border-radius:14px;background:#168bd811;display:grid;place-items:center;color:var(--accent);margin-bottom:17px;overflow:hidden}
+.tour-symbol img{width:100%;height:100%;object-fit:contain}
+.tour-symbol>.devil-icon{width:25px;height:25px}
+.tour-copy h2{font-size:23px;line-height:1.5;letter-spacing:-.5px}
+.tour-copy p{font-size:13px;line-height:1.9;margin-top:11px;overflow-wrap:anywhere}
+.tour-progress{display:flex;gap:5px;margin:23px 0}
+.tour-progress span{height:3px;background:var(--border);border-radius:3px;flex:1;transition:background .2s}
+.tour-progress .complete{background:#168bd870}
+.tour-progress .current{background:var(--accent);box-shadow:0 0 8px #168bd830}
+.tour-controls{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tour-controls>div{display:flex;align-items:center;gap:9px}
+.tour-skip,.tour-back{border:0;background:transparent;color:var(--muted);padding:8px 0;font-size:11px;white-space:nowrap}
+.tour-skip:hover,.tour-back:hover{color:var(--text)}
+.tour-controls .button{min-height:40px;padding:9px 15px;font-size:12px;gap:8px}
+:root[data-theme=light] .tour-panel{box-shadow:0 25px 90px #06162945}
+@keyframes tour-arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){.hero .actions .invite-button{max-width:none}.invite-button{padding:12px 13px}.tour-panel{padding:21px;border-radius:18px}.tour-copy h2{font-size:21px}.tour-copy p{font-size:12px}.tour-top{margin-bottom:18px}.tour-progress{margin:20px 0}}
+@media(prefers-reduced-motion:reduce){.tour-panel{animation:none}.tour-spotlight,.invite-button:before{transition:none}.invite-button:hover,.invite-button:hover .invite-arrow{transform:none}}
 .owner-guild-label{flex:1;min-width:200px;max-width:420px}
 #owner-result{margin-bottom:18px;white-space:pre-wrap}
 .owner-command-card .settings-head{gap:14px;align-items:flex-start}

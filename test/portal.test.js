@@ -34,6 +34,22 @@ test('dashboard and CMS reject unauthenticated, non-owner, cross-origin and CSRF
 test('OAuth callback rejects missing or mismatched state without contacting Discord', async () => {
   const response = await request('callback&state=forged&code=fake'); assert.equal(response.code, 302); assert.equal(response.headers.Location, '/dashboard?error=oauth');
 });
+
+test('bot invitation redirects guests to Discord using only public application settings', async () => {
+  const previous = process.env.DISCORD_CLIENT_ID;
+  delete process.env.DISCORD_CLIENT_ID;
+  assert.equal((await request('invite')).code, 503);
+  process.env.DISCORD_CLIENT_ID = '123456789012345678';
+  try {
+    const result = await request('invite');
+    assert.equal(result.code, 302);
+    const target = new URL(result.headers.Location);
+    assert.equal(target.origin, 'https://discord.com');
+    assert.equal(target.searchParams.get('scope'), 'bot applications.commands');
+    assert.equal(target.searchParams.get('client_id'), process.env.DISCORD_CLIENT_ID);
+    assert.equal(target.searchParams.has('client_secret'), false);
+  } finally { if (previous === undefined) delete process.env.DISCORD_CLIENT_ID; else process.env.DISCORD_CLIENT_ID = previous; }
+});
 test('OAuth login exchanges a matching state, encrypts the session and clears the state cookie', async () => {
   process.env.DISCORD_CLIENT_ID = '123456789012345678'; process.env.DISCORD_CLIENT_SECRET = 'test-client-secret';
   const login = await request('login'); const authorize = new URL(login.headers.Location);

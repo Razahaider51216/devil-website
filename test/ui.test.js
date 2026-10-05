@@ -8,10 +8,11 @@ const html = await readFile(new URL('../public/index.html', import.meta.url), 'u
 const script = await readFile(new URL('../public/portal-app.js', import.meta.url), 'utf8');
 const icons = await readFile(new URL('../public/icons.js', import.meta.url), 'utf8');
 const account = await readFile(new URL('../public/account.js', import.meta.url), 'utf8');
+const tour = await readFile(new URL('../public/tour.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function page(route, fixtures = {}) {
-  const dom = new JSDOM(html, { url: `https://devil.example${route}`, runScripts: 'outside-only' });
+  const dom = new JSDOM(html, { url: `https://devil.example${route}`, runScripts: 'outside-only', pretendToBeVisual: true });
   dom.window.structuredClone = structuredClone;
   dom.window.fetch = async (url, options) => {
     const action = new URL(url, dom.window.location.href).searchParams.get('action');
@@ -33,6 +34,34 @@ test('Public and VIP tabs filter the real catalog without exposing Private', asy
     assert.ok(!doc.querySelector('#command-list').textContent.includes('/set-welcom'));
     const search = doc.querySelector('#command-search'); search.value = 'setbuy'; search.dispatchEvent(new dom.window.Event('input'));
     assert.equal(doc.querySelectorAll('#command-list article').length, 1);
+  } finally { dom.window.close(); }
+});
+
+test('first-visit tour supports next, back, completion, skip, replay and saved preference', async () => {
+  const dom = await page('/');
+  try {
+    const doc = dom.window.document;
+    dom.window.scrollTo = () => {};
+    dom.window.eval(tour);
+    assert.ok(doc.querySelector('.tour-panel'));
+    assert.equal(doc.querySelector('#app').inert, true);
+    assert.ok(doc.querySelector('#tour-title').textContent.includes('ยินดีต้อนรับ'));
+    doc.querySelector('[data-tour-next]').click();
+    assert.ok(doc.querySelector('#tour-title').textContent.includes('เชิญ'));
+    doc.querySelector('[data-tour-back]').click();
+    assert.ok(doc.querySelector('#tour-title').textContent.includes('ยินดีต้อนรับ'));
+    for (let i = 0; i < 20 && doc.querySelector('[data-tour-next]'); i++) doc.querySelector('[data-tour-next]').click();
+    assert.equal(doc.querySelector('.tour-overlay'), null);
+    assert.equal(dom.window.localStorage.getItem('devil-tour-v1'), 'finished');
+    assert.ok(!doc.querySelector('#app').inert);
+    assert.ok(doc.querySelector('.owner-section').compareDocumentPosition(doc.querySelector('.toolkit-section')) & 4);
+    assert.equal(doc.querySelector('.hero [data-invite-bot]').getAttribute('href'), '/api/portal?action=invite');
+    doc.querySelector('[data-start-tour]').click();
+    assert.ok(doc.querySelector('.tour-panel'));
+    doc.querySelector('[data-tour-skip]').click();
+    assert.equal(dom.window.localStorage.getItem('devil-tour-v1'), 'skipped');
+    dom.window.eval(tour);
+    assert.equal(doc.querySelector('.tour-overlay'), null);
   } finally { dom.window.close(); }
 });
 

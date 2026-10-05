@@ -20,6 +20,12 @@ export default async function handler(req, res) {
     const session = unseal(cookies(req).devil_session);
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const callback = `${appUrl.replace(/\/$/, '')}/api/portal?action=callback`;
+    if (action === 'invite' && req.method === 'GET') {
+      if (!/^\d{15,22}$/.test(process.env.DISCORD_CLIENT_ID || '')) return send(res, 503, { error: 'ยังไม่ได้ตั้งค่า Discord Client ID สำหรับเชิญบอท' });
+      const target = new URL('https://discord.com/oauth2/authorize');
+      target.search = new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, scope: 'bot applications.commands', permissions: '8' }).toString();
+      return redirect(res, target.href);
+    }
     if (action === 'login' && req.method === 'GET') {
       if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || !process.env.SESSION_SECRET) return send(res, 503, { error: 'กรุณาตั้งค่า Discord OAuth ใน .env ก่อน' });
       const state = nonce();
