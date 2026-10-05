@@ -180,10 +180,6 @@ test('login tour spotlight uses overlay coordinates and follows mobile viewport 
     };
     assert.equal(doc.querySelector('#tour-title').textContent, 'เข้าสู่ระบบ Discord');
     assertAligned();
-    // Step 7 must still point to the account button after closing the drawer.
-    for (let i = 0; i < 6; i++) doc.querySelector('[data-tour-next]').click();
-    assert.ok(doc.querySelector('#tour-title').textContent.includes('จัดการเซิร์ฟเวอร์'));
-    assertAligned();
     origin = { left: 0, top: 60 }; targetTop = 115;
     visual.offsetTop = 40; visual.height = 600;
     visual.dispatchEvent(new win.Event('scroll'));
@@ -191,6 +187,31 @@ test('login tour spotlight uses overlay coordinates and follows mobile viewport 
     assertAligned();
     assert.equal(scrolls, 0);
   } finally { dom.window.close(); }
+});
+
+test('tour introduces login once and points server management to its own desktop button or mobile menu', async () => {
+  for (const width of [390, 1280]) {
+    const dom = await page('/');
+    try {
+      const win = dom.window, doc = win.document;
+      win.innerWidth = width; win.scrollTo = () => {}; win.scrollBy = () => {};
+      const account = doc.querySelector('#account-link');
+      const management = doc.querySelector(width <= 760 ? '#mobile-navigation a[href="/dashboard"]' : '.hero a[href="/dashboard"]');
+      let loginTargets = 0, managementTargets = 0;
+      account.scrollIntoView = () => loginTargets++;
+      management.scrollIntoView = () => managementTargets++;
+      win.eval(tour);
+      for (let i = 0; i < 6; i++) doc.querySelector('[data-tour-next]').click();
+      assert.equal(doc.querySelector('#tour-title').textContent, 'จัดการเซิร์ฟเวอร์จากเว็บ');
+      assert.ok(!doc.querySelector('#tour-description').textContent.includes('เข้าสู่ระบบ'));
+      assert.equal(loginTargets, 1);
+      assert.equal(managementTargets, 1);
+      assert.equal(win.DevilNavigation.isOpen, width <= 760);
+      doc.querySelector('[data-tour-next]').click();
+      assert.ok(doc.querySelector('#tour-title').textContent.includes('พร้อมเริ่ม'));
+      assert.equal(loginTargets, 1);
+    } finally { dom.window.close(); }
+  }
 });
 
 test('Owner command page requires an Owner and submits selected channel/form values with CSRF', async () => {

@@ -15,7 +15,7 @@
       { target: '.toolkit-section .feature-card:first-child h3, #navigation a[href="/features"]', symbol: 'grid', title: 'ระบบสำหรับชุมชนของคุณ', body: 'ดูฟีเจอร์ Welcome, Ticket และความปลอดภัย พร้อมภาพและรายละเอียดของแต่ละระบบ' },
       { target: '#navigation a[href="/commands"]', symbol: 'command', title: 'คำสั่ง Public และ VIP', body: 'ค้นหาคำสั่งตามชื่อหรือหมวด เลือก Public หรือ VIP เพื่อดูรายละเอียดและตัวเลือกของคำสั่งที่ต้องการ' },
       { target: '#navigation a[href="/servers"]', symbol: 'users', title: 'สำรวจชุมชน', body: 'ดูเซิร์ฟเวอร์ที่ใช้ Devil แยกเป็นหมวด พร้อมข้อมูลสมาชิกและสถานะชุมชน' },
-      { target: '#account-link', symbol: 'settings', title: 'จัดการเซิร์ฟเวอร์จากเว็บ', body: 'เข้าสู่ระบบ Discord แล้วเลือกเซิร์ฟเวอร์ที่คุณดูแล บอทต้องอยู่ในเซิร์ฟเวอร์ และบัญชีต้องมีสิทธิ์จัดการ จึงจะตั้งค่า Welcome, Ticket และระบบอื่น ๆ ได้' }
+      { target: '#navigation a[href="/dashboard"], .hero a[href="/dashboard"], footer a[href="/dashboard"]', symbol: 'settings', title: 'จัดการเซิร์ฟเวอร์จากเว็บ', body: 'เปิดเมนูจัดการเซิร์ฟเวอร์ แล้วเลือกเซิร์ฟเวอร์ที่คุณดูแล เพื่อตั้งค่า Welcome, Ticket ช่องแจ้งเตือน และระบบความปลอดภัย บอทต้องอยู่ในเซิร์ฟเวอร์ และบัญชีของคุณต้องมีสิทธิ์จัดการ' }
     ];
     if (!document.querySelector('.owner-section')) list.splice(2, 1);
     if (!document.querySelector('#admin-link')?.hidden) list.push({ target: '#admin-link', symbol: 'crown', title: 'เครื่องมือสำหรับ Owner', body: 'Owner เข้าไปจัดการฟีเจอร์ อัปเดต และหมวดชุมชนในหลังบ้าน รวมถึงใช้คำสั่งประกาศ ตั้งสถานะ และ Reload ในเซิร์ฟเวอร์หลักได้' });
