@@ -11,6 +11,7 @@ const account = await readFile(new URL('../public/account.js', import.meta.url),
 const tour = await readFile(new URL('../public/tour.js', import.meta.url), 'utf8');
 const navigation = await readFile(new URL('../public/navigation.js', import.meta.url), 'utf8');
 const information = await readFile(new URL('../public/information.js', import.meta.url), 'utf8');
+const featureDemos = await readFile(new URL('../public/feature-demos.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function page(route, fixtures = {}) {
@@ -22,7 +23,7 @@ async function page(route, fixtures = {}) {
     const result = fixtures[action] || fallback;
     return { ok: true, json: async () => typeof result === 'function' ? result(url, options) : result };
   };
-  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(navigation); dom.window.eval(information); dom.window.eval(script); await flush(); await flush(); return dom;
+  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(navigation); dom.window.eval(information); dom.window.eval(featureDemos); dom.window.eval(script); await flush(); await flush(); return dom;
 }
 test('footer information links open their own content in the shared portal without waiting for Discord or CMS', async () => {
   const rewrites = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8')).rewrites;
@@ -51,6 +52,89 @@ test('footer information links open their own content in the shared portal witho
     const asset = await fetch(`http://127.0.0.1:${server.address().port}/information.js`);
     assert.equal(asset.status, 200);
     assert.equal(await asset.text(), information);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test('feature demos work without login or CMS and simulate Welcome, Ticket and Verify locally', async () => {
+  const dom = await page('/features', { session: new Promise(() => {}), content: new Promise(() => {}) });
+  try {
+    const win = dom.window, doc = win.document;
+    let requests = 0; win.fetch = async () => { requests++; throw new Error('Demo must not contact Discord'); };
+    const selectTab = id => doc.querySelector(`[data-demo-tab="${id}"]`).click();
+    const action = id => doc.querySelector(`[data-demo-action="${id}"]`).click();
+    const setField = (id, value) => { const field = doc.querySelector(`[data-demo-field="${id}"]`); if (field.type === 'checkbox') field.checked = value; else field.value = value; field.dispatchEvent(new win.Event('input', { bubbles: true })); };
+    const stage = () => doc.querySelector('[data-demo-stage]');
+    assert.ok(stage().textContent.includes('ยินดีต้อนรับ'));
+    setField('welcomeEvent', 'leave'); assert.ok(stage().textContent.includes('แล้วพบกันใหม่'));
+    setField('enabled', false); assert.ok(stage().textContent.includes('ปิดระบบแล้ว'));
+    action('reset'); assert.ok(stage().textContent.includes('ยินดีต้อนรับ'));
+    selectTab('ticket');
+    setField('title', '<img src=x onerror=alert(1)>');
+    assert.ok(stage().textContent.includes('<img src=x onerror=alert(1)>')); assert.equal(stage().querySelector('img[src=x]'), null);
+    setField('buttonEmoji', '<a:demo:1538599895093747792>');
+    assert.ok(stage().querySelector('.demo-emoji').src.includes('1538599895093747792.gif'));
+    action('ticket-open'); assert.equal(doc.querySelector('[data-demo-channel]').textContent, 'ticket-demo-001');
+    action('ticket-close'); assert.ok(stage().textContent.includes('ต้องการปิด Ticket'));
+    action('ticket-cancel'); assert.equal(doc.querySelector('[data-demo-action="ticket-confirm"]'), null);
+    action('ticket-close'); action('ticket-confirm'); assert.equal(doc.querySelector('[data-demo-channel]').textContent, 'support');
+    selectTab('verify'); doc.querySelector('[data-role="Member"]').click();
+    assert.ok(stage().querySelector('.demo-result').textContent.includes('@Member'));
+    doc.querySelector('[data-role="Member"]').click(); assert.equal(stage().querySelectorAll('.demo-result .demo-mention').length, 1);
+    setField('verifyMode', 'emoji');
+    assert.equal(stage().querySelector('[data-role="Member"]').getAttribute('aria-pressed'), 'true');
+    stage().querySelector('[data-role="Member"]').click(); assert.equal(stage().querySelector('[data-role="Member"]').getAttribute('aria-pressed'), 'false');
+    assert.equal(stage().querySelector('.demo-result'), null);
+    action('reset'); assert.equal(doc.querySelector('[data-demo-field="verifyMode"]').value, 'button');
+    assert.equal(requests, 0);
+  } finally { dom.window.close(); }
+});
+
+test('Shop demo supports keyboard selection, payment simulation, reset and Discord emoji fallback', async () => {
+  const dom = await page('/features');
+  try {
+    const win = dom.window, doc = win.document;
+    let requests = 0; win.fetch = async () => { requests++; throw new Error('Demo must not create purchases'); };
+    const action = id => doc.querySelector(`[data-demo-action="${id}"]`).click();
+    const ticketTab = doc.querySelector('[data-demo-tab="ticket"]');
+    ticketTab.focus(); ticketTab.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+    assert.equal(doc.activeElement.dataset.demoTab, 'shop');
+    assert.equal(doc.querySelector('#demo-workspace').getAttribute('aria-labelledby'), 'demo-tab-shop');
+    action('shop-menu'); assert.equal(doc.querySelector('.demo-select-trigger').getAttribute('aria-expanded'), 'true');
+    doc.activeElement.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+    assert.equal(doc.activeElement.dataset.product, 'vip'); doc.activeElement.click();
+    assert.equal(doc.activeElement.className, 'demo-select-trigger');
+    assert.ok(doc.querySelector('.demo-product').textContent.includes('199.00'));
+    action('pay-promptpay'); assert.ok(doc.querySelector('.demo-result').textContent.includes('พร้อมเพย์'));
+    action('pay-complete'); assert.ok(doc.querySelector('.demo-result').textContent.includes('ชำระเงินตัวอย่างสำเร็จ'));
+    action('pay-truemoney'); assert.ok(doc.querySelector('.demo-result').textContent.includes('TrueMoney'));
+    action('pay-cancel'); assert.equal(doc.querySelector('.demo-result'), null);
+    action('shop-menu');
+    doc.activeElement.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    assert.equal(doc.querySelector('.demo-select-options').hidden, true); assert.equal(doc.activeElement.className, 'demo-select-trigger');
+    const emojiImage = doc.querySelector('.demo-emoji'); emojiImage.dispatchEvent(new win.Event('error'));
+    assert.equal(emojiImage.hidden, true); assert.equal(emojiImage.nextElementSibling.hidden, false);
+    action('reset'); assert.equal(doc.querySelector('.demo-product'), null); assert.equal(doc.querySelector('.demo-result'), null);
+    assert.equal(requests, 0);
+    // A published CMS feature stays visible under the interactive examples.
+    assert.ok(doc.querySelector('#published-features'));
+  } finally { dom.window.close(); }
+});
+
+test('feature demo serves original bot artwork and keeps published CMS features escaped and visible', async () => {
+  const dom = await page('/features', { content: { features: [{ title: 'My feature <script>', body: 'Details', mode: 'Public', command: 'set-ticket' }, { title: 'Private only', mode: 'Private' }], updates: [] } });
+  try {
+    assert.ok(dom.window.document.querySelector('#published-features').textContent.includes('My feature <script>'));
+    assert.equal(dom.window.document.querySelector('#published-features script'), null);
+    assert.ok(!dom.window.document.querySelector('#published-features').textContent.includes('Private only'));
+  } finally { dom.window.close(); }
+  const { server } = await import('../local-server.js');
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    for (const asset of ['feature-demos.js', 'feature-demos.css', 'demo-assets/welcome-embed-image.png', 'demo-assets/ticket-card-v2.png', 'demo-assets/devil-shop-banner.png']) {
+      const response = await fetch(`http://127.0.0.1:${server.address().port}/${asset}`, { method: 'HEAD' });
+      assert.equal(response.status, 200, asset);
+      assert.ok(response.headers.get('content-type').includes(asset.endsWith('.png') ? 'image/png' : asset.endsWith('.css') ? 'text/css' : 'text/javascript'));
+    }
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
 

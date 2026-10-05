@@ -15,7 +15,8 @@ test('session encryption detects tampering, expires and conceals access tokens',
   const data = { token: 'discord-private-token', exp: Date.now() + 60000 };
   const encoded = seal(data, secret); assert.deepEqual(unseal(encoded, secret), data);
   assert.ok(!encoded.includes(data.token)); assert.equal(unseal(encoded, `${secret}x`), null);
-  assert.equal(unseal(`${encoded.slice(0, 8)}A${encoded.slice(9)}`, secret), null);
+  const tampered = `${encoded.slice(0, 8)}${encoded[8] === 'A' ? 'B' : 'A'}${encoded.slice(9)}`;
+  assert.equal(unseal(tampered, secret), null);
   assert.equal(unseal(seal({ ...data, exp: Date.now() - 1 }, secret), secret), null);
 });
 test('dashboard and CMS reject unauthenticated, non-owner, cross-origin and CSRF requests', async () => {

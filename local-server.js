@@ -20,6 +20,11 @@ const staticFiles = {
   '/tour.js': ['tour.js', 'text/javascript; charset=utf-8'],
   '/navigation.js': ['navigation.js', 'text/javascript; charset=utf-8'],
   '/information.js': ['information.js', 'text/javascript; charset=utf-8'],
+  '/feature-demos.js': ['feature-demos.js', 'text/javascript; charset=utf-8'],
+  '/feature-demos.css': ['feature-demos.css', 'text/css; charset=utf-8'],
+  '/demo-assets/welcome-embed-image.png': ['demo-assets/welcome-embed-image.png', 'image/png'],
+  '/demo-assets/ticket-card-v2.png': ['demo-assets/ticket-card-v2.png', 'image/png'],
+  '/demo-assets/devil-shop-banner.png': ['demo-assets/devil-shop-banner.png', 'image/png'],
   '/favicon.svg': ['favicon.svg', 'image/svg+xml']
 };
 

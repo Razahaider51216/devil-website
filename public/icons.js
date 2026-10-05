@@ -6,6 +6,8 @@
     external: '<path d="M7 17 17 7M8 7h9v9"/>',
     menu: '<path d="M4 7h16M4 12h10M4 17h16"/>',
     close: '<path d="m7 7 10 10M17 7 7 17"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>',
+    reload: '<path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10m16 4-3 3a7 7 0 0 1-12-5"/>',
     logout: '<path d="M10 4H5v16h5m3-12 4 4-4 4m-4-4h12"/>',
     theme: '<g class="theme-sun"><circle cx="12" cy="12" r="4.5" fill="currentColor" fill-opacity=".12"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><g class="theme-moon"><path d="M14.3 3.1a8.4 8.4 0 1 0 6.6 11.2 7.2 7.2 0 0 1-6.6-11.2Z" fill="currentColor" fill-opacity=".1"/><path d="M6.4 13.4a5.8 5.8 0 0 0 4.2 4.2" opacity=".45"/></g>',
     command: '<path d="m5 7 5 5-5 5m9 0h5"/><path d="M3 3h18v18H3z" opacity=".35"/>',

@@ -258,6 +258,15 @@ async function admin() {
 async function start() {
   // Static information pages remain available even if Discord or the CMS is down.
   if (window.DevilInformation?.render(route, app)) return;
+  if (route === '/features') {
+    app.innerHTML = `<div class="container">${head('EXPLORE DEVIL', 'ฟีเจอร์', 'ทดลอง Welcome, Ticket, Verify และ Shop ในรูปแบบข้อความ Discord')}<div id="feature-demo-root"></div><section class="section"><div class="section-heading"><div><div class="section-label">MORE FROM DEVIL</div><h2>ฟีเจอร์และรายละเอียด</h2><p>ระบบต่าง ๆ และข้อมูลจากทีม Devil</p></div></div><div class="grid" id="published-features"><div class="loading">กำลังโหลดรายละเอียด…</div></div></section></div>`;
+    window.DevilFeatureDemos.mount(document.querySelector('#feature-demo-root'));
+    api('content').then(data => {
+      const features = Array.isArray(data.features) ? data.features.filter(f => f && f.mode !== 'Private') : [];
+      document.querySelector('#published-features').innerHTML = features.map(featureCard).join('') || empty('ทีมงานยังไม่ได้เผยแพร่รายละเอียดเพิ่มเติม');
+    }).catch(() => { document.querySelector('#published-features').innerHTML = empty('ยังโหลดรายละเอียดเพิ่มเติมไม่ได้ แต่ทดลองระบบด้านบนได้เลย'); });
+    return;
+  }
   // The server directory does not depend on login, Owner profiles or the CMS.
   if (route === '/servers') {
     app.innerHTML = '<div class="container"><div class="loading">กำลังโหลดเซิร์ฟเวอร์จาก Discord…</div></div>';
