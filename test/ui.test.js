@@ -5,6 +5,7 @@ import { JSDOM } from 'jsdom';
 const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const script = await readFile(new URL('../public/portal-app.js', import.meta.url), 'utf8');
 const icons = await readFile(new URL('../public/icons.js', import.meta.url), 'utf8');
+const account = await readFile(new URL('../public/account.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function page(route, fixtures = {}) {
@@ -16,7 +17,7 @@ async function page(route, fixtures = {}) {
     const result = fixtures[action] || fallback;
     return { ok: true, json: async () => result };
   };
-  dom.window.eval(icons); dom.window.eval(script); await flush(); await flush(); return dom;
+  dom.window.eval(icons); dom.window.eval(account); dom.window.eval(script); await flush(); await flush(); return dom;
 }
 test('Public and VIP tabs filter the real catalog without exposing Private', async () => {
   const dom = await page('/commands');

@@ -15,6 +15,8 @@ const staticFiles = {
   '/portal-app.js': ['portal-app.js', 'text/javascript; charset=utf-8'],
   '/portal.css': ['portal.css', 'text/css; charset=utf-8'],
   '/icons.js': ['icons.js', 'text/javascript; charset=utf-8'],
+  '/account.js': ['account.js', 'text/javascript; charset=utf-8'],
+  '/account.css': ['account.css', 'text/css; charset=utf-8'],
   '/favicon.svg': ['favicon.svg', 'image/svg+xml']
 };
 

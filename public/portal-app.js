@@ -25,7 +25,6 @@ document.querySelectorAll('#navigation a').forEach(a => a.classList.toggle('acti
 document.querySelector('#menu-toggle').onclick = event => { const open = document.querySelector('#navigation').classList.toggle('open'); event.currentTarget.setAttribute('aria-expanded', String(open)); };
 try { document.documentElement.dataset.theme = localStorage.getItem('devil-portal-theme') || 'dark'; } catch {}
 document.querySelector('#theme-toggle').onclick = () => { const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = theme; try { localStorage.setItem('devil-portal-theme', theme); } catch {} };
-document.querySelector('#logout').onclick = async () => { try { await api('logout', {}); location.href = '/'; } catch (e) { toast(e.message); } };
 const dialog = document.querySelector('#profile-dialog');
 dialog.querySelector('button').onclick = () => dialog.close();
 dialog.onclick = event => { if (event.target === dialog) dialog.close(); };
@@ -192,10 +191,10 @@ async function start() {
     app.innerHTML = '<div class="container"><div class="loading">กำลังโหลดเซิร์ฟเวอร์จาก Discord…</div></div>';
     fetchStatus().then(data => { status = data; serverPage(); }).catch(() => serverPage());
     api('content').then(data => { content = { features: Array.isArray(data.features) ? data.features : [], updates: Array.isArray(data.updates) ? data.updates : [], serverCategories: Array.isArray(data.serverCategories) ? data.serverCategories.filter(c => c && Array.isArray(c.guildIds)) : [] }; if (status.servers !== null) serverPage(); }).catch(() => {});
-    api('session').then(data => { session = data; if (session.user) { document.querySelector('#account-link').href = '/dashboard'; document.querySelector('#account-link').textContent = session.user.name + ' · Dashboard'; document.querySelector('#logout').hidden = false; document.querySelector('#admin-link').hidden = !session.owner; } }).catch(() => {});
+    window.DevilAccount.ready.then(data => { session = data; });
     return;
   }
-  const requests = await Promise.allSettled([api('session'), api('catalog'), api('content'), fetchStatus(), api('owners')]);
+  const requests = await Promise.allSettled([window.DevilAccount.ready, api('catalog'), api('content'), fetchStatus(), api('owners')]);
   if (requests[0].status === 'fulfilled') session = requests[0].value;
   if (requests[1].status === 'fulfilled') catalog = requests[1].value;
   if (requests[2].status === 'fulfilled') content = requests[2].value;

@@ -5,6 +5,7 @@
     external: '<path d="M7 17 17 7M8 7h9v9"/>',
     menu: '<path d="M4 7h16M4 12h10M4 17h16"/>',
     close: '<path d="m7 7 10 10M17 7 7 17"/>',
+    logout: '<path d="M10 4H5v16h5m3-12 4 4-4 4m-4-4h12"/>',
     theme: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/>',
     command: '<path d="m5 7 5 5-5 5m9 0h5"/><path d="M3 3h18v18H3z" opacity=".35"/>',
     server: '<rect x="4" y="3" width="16" height="7" rx="2"/><rect x="4" y="14" width="16" height="7" rx="2"/><path d="M8 6.5h.01M8 17.5h.01m4-11h5m-5 11h5M12 10v4"/>',
