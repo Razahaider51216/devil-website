@@ -20,6 +20,7 @@
     settings: '<path d="M4 6h6m4 0h6M4 12h10m4 0h2M4 18h2m4 0h10"/><circle cx="12" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>',
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15 15 5 5"/>',
     bell: '<path d="M6 10a6 6 0 0 1 12 0v5l2 3H4l2-3v-5Zm4 11h4M12 2v2"/>',
+    calendar: '<rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 10h16m-12 4h3m2 0h3m-8 3h3"/>',
     chat: '<path d="M4 4h16v12H9l-5 4V4Z"/><path d="M8 8h8m-8 4h5"/>',
     globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-5 5-5 13 0 18 5-5 5-13 0-18Z"/>',
     activity: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',

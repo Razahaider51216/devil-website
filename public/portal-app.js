@@ -45,7 +45,16 @@ function featureCard(f) {
   return `<article class="card feature-card">${f.imageUrl ? img(f.imageUrl, 'card-image', f.title) : `<div class="feature-art"><div class="feature-orbit"></div>${icon(commandIcon(f.command || ''), 'feature-symbol')}<span class="feature-art-caption">DEVIL / ${escape(f.command || 'feature')}</span></div>`}<div class="card-top"><span class="badge ${f.mode === 'VIP' ? 'vip' : 'public'}">${f.mode === 'VIP' ? icon('vip') : icon('check')}${escape(f.mode || 'Public')}</span>${f.command ? `<span class="command-tag">/${escape(f.command)}</span>` : ''}</div><h3>${escape(f.title)}</h3><p>${escape(f.body)}</p></article>`;
 }
 function serverCard(g) { return `<article class="card"><div class="card-top">${img(g.iconUrl, 'server-icon', g.name) || `<span class="server-icon">${escape(g.name?.slice(0, 1))}</span>`}<h3>${escape(g.name)}</h3></div><span class="badge public">DEVIL COMMUNITY</span><div class="server-info"><span>${number(g.members)} สมาชิก</span><span><i class="dot"></i> ${number(g.online)} ออนไลน์</span></div></article>`; }
-function updateCard(u) { return `<article class="card update-card"><time>${escape(new Date(u.date).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'long', year: 'numeric' }))}</time><h3>${escape(u.title)}</h3>${img(u.imageUrl, 'card-image', u.title)}<p>${escape(u.body)}</p></article>`; }
+function updateCard(u, index = 0) {
+  const date = new Date(u.date);
+  const validDate = Number.isFinite(date.getTime());
+  const dateLabel = validDate ? date.toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'long', year: 'numeric' }) : 'ข่าวจากทีมงาน';
+  return `<article class="card update-card">
+    <div class="update-header"><div class="update-publisher"><img src="/bot-avatar?v=original-logo" alt="" loading="lazy"><div><b>DEVIL BOT</b><span>ข่าวจากทีม Devil</span></div></div><span class="update-label ${index === 0 ? 'latest' : ''}">${icon('bell')}${index === 0 ? 'อัปเดตล่าสุด' : 'อัปเดต'}</span></div>
+    <h3>${escape(u.title)}</h3>${img(u.imageUrl, 'card-image', u.title)}<p class="update-body">${escape(u.body)}</p>
+    <div class="update-footer">${icon('calendar')}<time${validDate ? ` datetime="${escape(date.toISOString())}"` : ''}>${escape(dateLabel)}</time><span>DEVIL UPDATES</span></div>
+  </article>`;
+}
 function homepage() {
   const servers = status.servers || [];
   const members = servers.length && servers.every(g => Number.isFinite(g.members)) ? servers.reduce((sum, g) => sum + g.members, 0) : null;
@@ -67,14 +76,14 @@ function homepage() {
         <div class="console-system"><span class="console-icon">${icon('shield')}</span><div><b>Server protection</b><small>ชุมชนปลอดภัย สบายใจทุกวัน</small></div>${icon('arrow')}</div>
         <div class="console-bottom">${icon('command')} คำสั่งพร้อมใช้ <span>Public <i></i> VIP</span></div></div></div></div>
       <div class="visual-float">${icon('shield')}<div><b>Built around your people.</b><small>ให้ทุกคนรู้สึกเป็นส่วนหนึ่ง</small></div></div>
-      <div class="visual-stamp">${icon('community')} MADE FOR COMMUNITY</div>
+      <div class="visual-stamp"><img class="community-logo" src="/bot-avatar?v=original-logo" alt="" loading="lazy"> MADE FOR COMMUNITY</div>
     </div></section>
     <section class="stats-bar"><div class="stat"><span class="stat-icon">${icon('server')}</span><div><div class="metric">${status.servers ? number(servers.length) : '—'}</div><p>เซิร์ฟเวอร์ที่ใช้ Devil</p></div></div><div class="stat"><span class="stat-icon">${icon('users')}</span><div><div class="metric">${number(members)}</div><p>สมาชิกในชุมชน</p></div></div><div class="stat"><span class="stat-icon">${icon('command')}</span><div><div class="metric">${number(catalog.commands.length)}</div><p>คำสั่ง Public & VIP</p></div></div><div class="stat"><span class="stat-icon">${icon('activity')}</span><div><div id="live-status" class="metric status">กำลังตรวจสอบ</div><p id="live-ping">สถานะบอทแบบสด</p></div></div></section>
     <section class="section">${sectionHead('THE COMMUNITY TOOLKIT', 'รายละเอียดเล็ก ๆ ที่ทำให้ชุมชนดีขึ้น', 'จากวันแรกที่เข้าร่วม จนถึงทุกวันที่เติบโตไปด้วยกัน', '/features')}<div class="grid">${features.map(featureCard).join('')}</div></section>
     <section class="section owner-section">${sectionHead('THE PEOPLE BEHIND DEVIL', 'Meet the Owner', 'รู้จักผู้ดูแลที่อยู่เบื้องหลังชุมชนของคุณ')}<div class="owner-grid">${ownerProfiles.map(o => `<article class="owner-card">${profileCard(o)}</article>`).join('')}</div>${ownerProfiles.length ? '' : empty('ยังไม่มีโปรไฟล์ Owner ที่พร้อมแสดง')}</section>
     <section class="section">${sectionHead('PART OF SOMETHING BIGGER', 'ชุมชนที่เติบโตไปกับ Devil', 'พบกับเซิร์ฟเวอร์ที่ให้ Devil เป็นส่วนหนึ่งของทุกวัน', '/servers')}<div class="grid">${servers.slice(0, 3).map(serverCard).join('')}</div>${servers.length ? '' : empty('ยังไม่สามารถโหลดข้อมูลเซิร์ฟเวอร์ได้')}</section>
     ${content.updates.length ? `<section class="section">${sectionHead('FRESH FROM DEVIL', 'อัปเดตล่าสุด', 'ติดตามสิ่งใหม่จากทีม Devil', '/updates')}<div class="timeline">${content.updates.slice().reverse().slice(0, 2).map(updateCard).join('')}</div></section>` : ''}
-    <section class="cta-strip"><div class="cta-emblem">${icon('community')}</div><div><div class="section-label">NEXT CHAPTER STARTS HERE</div><h2>ชุมชนในแบบของคุณ เริ่มที่นี่.</h2><p>เชื่อมต่อ Discord แล้วให้ Devil ช่วยดูแลส่วนที่เหลือ</p></div><a class="button primary" href="/dashboard">เริ่มต้นใช้งาน ${icon('external')}</a></section>
+    <section class="cta-strip"><div class="cta-emblem"><img class="community-logo" src="/bot-avatar?v=original-logo" alt="" loading="lazy"></div><div><div class="section-label">NEXT CHAPTER STARTS HERE</div><h2>ชุมชนในแบบของคุณ เริ่มที่นี่.</h2><p>เชื่อมต่อ Discord แล้วให้ Devil ช่วยดูแลส่วนที่เหลือ</p></div><a class="button primary" href="/dashboard">เริ่มต้นใช้งาน ${icon('external')}</a></section>
   </div>`;
   bindProfiles(); refreshLive();
 }
