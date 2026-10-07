@@ -54,6 +54,8 @@ Run `npm test` to check OAuth state/session protection, role and guild access, V
 
 ## Run locally
 
+QR cards and the Discord QR settings panel use Components V2 containers, with their buttons inside the card. The title accepts Markdown headings such as `## ชำระเงิน` without duplicating the heading prefix. HEX accent color and expiration are preserved. Text across the QR card is limited to 4000 characters, including space reserved for its payment deadline; oversized edits are rejected before saving.
+
 ระบบ **QR / เวลาชำระเงิน** ในหน้า Dashboard จัดการ `/set-qr panel` และ `?qr` ได้: เลือกช่องส่ง ตั้งค่าข้อความเหนือ Embed (`##`), หัวข้อ คำอธิบาย สี รูป QR และข้อความ/อิโมจิปุ่ม พร้อมกำหนดเวลาลบเป็นจำนวนเต็ม 0–1440 นาที (`5` = ลบหลังส่ง 5 นาที, `0` = ไม่ลบ) ปุ่ม **บันทึกและเผยแพร่แผง** ส่งการ์ด QR ลงช่องที่เลือกและเริ่มนับเวลา บอทบันทึกเวลาหมดอายุของแต่ละข้อความไว้และลบต่อหลังรีสตาร์ต ตัวอย่าง QR ที่ส่งใหม่ใช้ค่าล่าสุด ส่วนข้อความที่ส่งแล้วใช้เวลาเดิม ต้องติดตั้งตัวเชื่อมด้วย `npm run install:bot` และรีสตาร์ตบอทที่มีระบบ QR แล้วก่อนใช้งาน
 
 1. Copy `.env.example` to `.env`.

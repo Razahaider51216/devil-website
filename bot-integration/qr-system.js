@@ -1,25 +1,26 @@
 const {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder,
-  PermissionsBitField, TextInputBuilder, TextInputStyle
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, MediaGalleryBuilder, MessageFlags, ModalBuilder,
+  PermissionsBitField, TextDisplayBuilder, TextInputBuilder, TextInputStyle
 } = require('discord.js');
 
 const { DEFAULTS, validateQrConfig, imageUrl, buttonEmoji } = require('./qr-config.cjs');
 
 function buildQrPayload(config, expiresAt) {
-  const embed = new EmbedBuilder().setColor(config.color);
-  if (config.title) embed.setTitle(config.title);
-  if (config.description) embed.setDescription(config.description);
-  if (config.footer) embed.setFooter({ text: config.footer });
-  if (config.imageUrl) embed.setImage(config.imageUrl);
-  if (expiresAt) embed.addFields({ name: '⏳ หมดเวลาชำระเงิน', value: `<t:${Math.floor(expiresAt / 1000)}:R> • ลบการ์ดอัตโนมัติเมื่อหมดเวลา` });
-  const components = [];
+  const container = new ContainerBuilder().setAccentColor(parseInt(config.color.slice(1), 16));
+  const title = config.title ? (/^#{1,3}\s/.test(config.title) ? config.title : `## ${config.title}`) : '';
+  for (const text of [config.content, title, config.description]) {
+    if (text) container.addTextDisplayComponents(new TextDisplayBuilder().setContent(text));
+  }
+  if (config.imageUrl) container.addMediaGalleryComponents(new MediaGalleryBuilder({ items: [{ media: { url: config.imageUrl } }] }));
+  if (expiresAt) container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`⏳ **หมดเวลาชำระเงิน**\n<t:${Math.floor(expiresAt / 1000)}:R> • ลบการ์ดอัตโนมัติเมื่อหมดเวลา`));
   if (config.imageUrl && config.buttonLabel) {
     const button = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(config.buttonLabel).setURL(config.imageUrl);
     const emoji = buttonEmoji(config.buttonEmoji);
     if (emoji) button.setEmoji(emoji);
-    components.push(new ActionRowBuilder().addComponents(button));
+    container.addActionRowComponents(new ActionRowBuilder().addComponents(button));
   }
-  return { content: config.content, embeds: [embed], components, allowedMentions: { parse: [] } };
+  if (config.footer) container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${config.footer}`));
+  return { flags: MessageFlags.IsComponentsV2, components: [container], allowedMentions: { parse: [] } };
 }
 
 function createQrSystem({ client, data, saveData, now = Date.now, setTimer = setTimeout, clearTimer = clearTimeout }) {
@@ -79,15 +80,16 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
   function panel(guildId, notice = '') {
     const config = getConfig(guildId);
     return {
-      embeds: [new EmbedBuilder().setColor(config.color).setTitle('⚙️ ตั้งค่า QR Panel').setDescription([
+      flags: MessageFlags.IsComponentsV2,
+      components: [new ContainerBuilder().setAccentColor(parseInt(config.color.slice(1), 16)).addTextDisplayComponents(new TextDisplayBuilder().setContent([
+        '## ⚙️ ตั้งค่า QR Panel',
         notice, 'ตั้งค่าแล้วใช้ `?qr` เพื่อส่งการ์ดในห้องที่ต้องการ',
         'ข้อความรองรับอิโมจิ, **ตัวหนา**, ลิงก์ และบรรทัดใหม่',
-        'ใช้ `## หัวข้อ` ในช่องข้อความเหนือ Embed เพื่อแสดงหัวข้อขนาดใหญ่',
+        'ใช้ `## หัวข้อ` ในช่องหัวข้อหรือข้อความเพื่อแสดงหัวข้อขนาดใหญ่',
         config.imageUrl ? '✅ ตั้งค่ารูป QR แล้ว' : '⚠️ กรุณาตั้งค่าลิงก์รูป QR ก่อนส่ง',
         config.autoDeleteMinutes ? `⏳ ลบการ์ดหลังส่ง ${config.autoDeleteMinutes} นาที` : '⏳ ไม่ลบการ์ดอัตโนมัติ',
         `🎨 สี Embed: \`${config.color}\``
-      ].filter(Boolean).join('\n\n'))],
-      components: [new ActionRowBuilder().addComponents(
+      ].filter(Boolean).join('\n\n'))).addActionRowComponents(new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('qr:text').setLabel('ข้อความ / หัวข้อ').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('qr:image').setLabel('ลิงก์รูป QR').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('qr:button').setLabel('แต่งปุ่ม').setStyle(ButtonStyle.Secondary),
@@ -96,7 +98,7 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
       ), new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('qr:timer').setLabel('⏳ ตั้งเวลาลบ (นาที)').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('qr:color').setLabel('🎨 สี Embed (HEX)').setStyle(ButtonStyle.Secondary)
-      )], allowedMentions: { parse: [] }
+      ))], allowedMentions: { parse: [] }
     };
   }
 
@@ -109,8 +111,8 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
   function modal(kind, config) {
     const fields = {
       text: [
-        ['content', 'ข้อความเหนือ Embed (รองรับ ##)', 2000, true],
-        ['title', 'หัวข้อ Embed', 256],
+        ['content', 'ข้อความส่วนบน (รองรับ ##)', 2000, true],
+        ['title', 'หัวข้อ (รองรับ #, ##, ###)', 256],
         ['description', 'คำอธิบาย (อิโมจิ / Markdown)', 4000, true],
         ['footer', 'ข้อความท้าย Embed', 1000],
         ['color', 'สี HEX เช่น #5865F2', 7]
@@ -132,7 +134,7 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
 
   async function handleCommand(interaction) {
     if (interaction.commandName !== 'set-qr') return false;
-    if (await authorize(interaction)) await interaction.reply({ ...panel(interaction.guildId), flags: 64 });
+    if (await authorize(interaction)) await interaction.reply({ ...panel(interaction.guildId), flags: MessageFlags.IsComponentsV2 | 64 });
     return true;
   }
 
@@ -147,7 +149,7 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
       if (kind === 'send' && !config.imageUrl) {
         await interaction.reply({ content: 'กรุณาตั้งค่าลิงก์รูป QR ก่อนส่ง', flags: 64 });
       } else if (kind === 'preview') {
-        await interaction.reply({ ...buildQrPayload(config), flags: 64 });
+        await interaction.reply({ ...buildQrPayload(config), flags: MessageFlags.IsComponentsV2 | 64 });
       } else {
         await interaction.deferReply({ flags: 64 });
         try {
@@ -192,8 +194,8 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
       return true;
     }
     const payload = panel(interaction.guildId, 'บันทึกการตั้งค่าแล้ว ✅');
-    if (interaction.isFromMessage()) await interaction.update(payload);
-    else await interaction.reply({ ...payload, flags: 64 });
+    if (interaction.isFromMessage()) await interaction.update({ ...payload, content: null, embeds: [] });
+    else await interaction.reply({ ...payload, flags: MessageFlags.IsComponentsV2 | 64 });
     return true;
   }
 

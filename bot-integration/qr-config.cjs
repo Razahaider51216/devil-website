@@ -16,6 +16,8 @@ function validateQrConfig(config) {
   buttonEmoji(result.buttonEmoji);
   if (!Number.isInteger(result.autoDeleteMinutes) || result.autoDeleteMinutes < 0 || result.autoDeleteMinutes > 1440) throw new Error('เวลาลบต้องเป็นจำนวนเต็ม 0–1440 นาที (0 = ไม่ลบอัตโนมัติ)');
   if (!result.title && !result.description && !result.footer && !result.imageUrl) throw new Error('กรุณาใส่หัวข้อ คำอธิบาย ข้อความท้าย หรือรูป QR อย่างน้อยหนึ่งอย่าง');
+  const textLength = result.content.length + result.title.length + (result.title ? 3 : 0) + result.description.length + result.footer.length + (result.footer ? 3 : 0) + (result.autoDeleteMinutes ? 140 : 0);
+  if (textLength > 4000) throw new Error('ข้อความรวมในการ์ด Components V2 ต้องไม่เกิน 4000 ตัวอักษร รวมส่วนแสดงเวลาชำระเงิน');
   return result;
 }
 
