@@ -122,6 +122,13 @@ test('logout works after access-token expiry without refreshing, revokes Discord
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('notification feed is available to guests and retains command notices when the CMS is unavailable', async () => {
+  const result = await request('notifications');
+  assert.equal(result.code, 200); assert.ok(Array.isArray(result.body.notifications));
+  assert.equal(result.headers['Cache-Control'], 'no-store');
+  assert.ok(!JSON.stringify(result.body).includes('private-refresh-token'));
+});
+
 test('catalog contains all Public and VIP commands and excludes private-only commands', async () => {
   const response = await request('catalog'); assert.equal(response.code, 200);
   const commands = response.body.commands;

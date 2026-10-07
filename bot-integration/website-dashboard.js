@@ -7,6 +7,7 @@ const { DEFAULTS: QR_DEFAULTS, validateQrConfig } = require('./qr-config.cjs');
 const { createOwnerTools } = require('./website-owner-tools.cjs');
 const { createFeaturePreviews } = require('./website-feature-previews.cjs');
 const { createPreviewImages } = require('./website-preview-images.cjs');
+const { publicationNotifications } = require('./website-notifications.cjs');
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const ids = value => String(value || '').split(',').map(v => v.trim()).filter(Boolean);
@@ -80,7 +81,7 @@ function createDashboardServer({ client, data, saveData, publish, ownerGuildIds,
   if (!secret) throw new Error('BOT_DASHBOARD_SECRET is required');
   let content = structuredClone(require('./website-default-content.json'));
   if (fs.existsSync(contentPath)) content = JSON.parse(fs.readFileSync(contentPath, 'utf8'));
-  const persist = next => { const tmp = `${contentPath}.${process.pid}.tmp`; fs.writeFileSync(tmp, JSON.stringify(next, null, 2)); fs.renameSync(tmp, contentPath); content = next; };
+  const persist = next => { next = { ...next, notifications: publicationNotifications(content, next) }; const tmp = `${contentPath}.${process.pid}.tmp`; fs.writeFileSync(tmp, JSON.stringify(next, null, 2)); fs.renameSync(tmp, contentPath); content = next; };
   const contentRevision = () => hash([content.features, content.updates, content.serverCategories]);
   const premium = id => ids(`${process.env.PREMIUM_GUILD_IDS || ''},${process.env.PREMIUM_SERVER_IDS || ''}`).includes(id);
   const available = (guildId, userId) => systems.filter(s => !s.private && (!s.restricted || ids(s.restricted === 'chat' ? process.env.PUBLIC_CHAT_GUILD_ID || process.env.GUILD_ID : process.env.PUBLIC_MAIN_GUILD_ID || process.env.GUILD_ID_2 || process.env.GUILD_ID).includes(guildId)));
@@ -103,6 +104,7 @@ function createDashboardServer({ client, data, saveData, publish, ownerGuildIds,
   const ownerTools = createOwnerTools({ client, data, saveData, validateFields, isOwner: id => ownerIds().includes(id), ownerGuildIds, ownerReloadFiles, executeOwner,
     audit: record => persist({ ...content, audit: [...content.audit, record].slice(-200) }) });
   async function dispatch(body) {
+    if (body.action === 'notifications') return { notifications: content.notifications || [] };
     if (body.action === 'feature-image-read') {
       const published = content.features.some(feature => feature.published && !feature.preview?.hideImages && require('./website-feature-message.cjs').hasImage(feature.preview, body.imageId));
       if (!published && !ownerIds().includes(body.userId)) fail(404, 'ไม่พบรูปภาพ');

@@ -13,6 +13,7 @@ const navigation = await readFile(new URL('../public/navigation.js', import.meta
 const information = await readFile(new URL('../public/information.js', import.meta.url), 'utf8');
 const featureDemos = await readFile(new URL('../public/feature-demos.js', import.meta.url), 'utf8');
 const provinceRegions = await readFile(new URL('../public/province-regions.js', import.meta.url), 'utf8');
+const notificationScript = await readFile(new URL('../public/notifications.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
@@ -292,6 +293,32 @@ test('Province demo has all bot provinces, supports selection, switching and res
     assert.equal(cards[0].querySelector('[data-demo-action="province-select"]'), null);
     assert.equal(cards[0].querySelectorAll('[data-demo-action="province-region"]').length, 7);
     assert.ok(cards[0].querySelector('.demo-emoji').src.includes('1550026571694342276'));
+  } finally { dom.window.close(); }
+});
+
+test('notification inbox counts unread messages, reads individually and remembers state for the account', async () => {
+  const rows = [{ id: 'notice-one', kind: 'update', title: 'New update <script>', body: 'Details', href: '/updates', at: '2026-10-07T10:00:00Z' }, { id: 'notice-two', kind: 'feature', title: 'New feature', body: 'Feature details', href: '/features', at: '2026-10-07T11:00:00Z' }];
+  const dom = await page('/', { session: { user: { id: '222', name: 'Member' } }, notifications: () => ({ notifications: rows }) });
+  try {
+    const doc = dom.window.document;
+    dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
+    dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); this.dispatchEvent(new dom.window.Event('close')); };
+    dom.window.eval(notificationScript); await flush(); await flush();
+    const badge = doc.querySelector('.notification-count'); assert.equal(badge.textContent, '2');
+    doc.querySelector('#notification-toggle').click(); await flush(); await flush();
+    assert.equal(badge.textContent, '2'); // Opening the box does not mark every message read.
+    doc.querySelector('[data-notification-id="notice-one"]').click();
+    assert.equal(badge.textContent, '1'); assert.ok(doc.querySelector('.notification-detail').textContent.includes('New update <script>'));
+    assert.equal(doc.querySelector('.notification-detail script'), null);
+    assert.deepEqual(JSON.parse(dom.window.localStorage.getItem('devil-notifications-read:222')), ['notice-one']);
+    assert.equal(dom.window.localStorage.getItem('devil-notifications-read:guest'), null);
+    doc.querySelector('[data-notification-back]').click(); assert.equal(doc.querySelector('[data-notification-id="notice-one"]'), null);
+    doc.querySelector('[data-notification-refresh]').click(); await flush(); await flush(); assert.equal(badge.textContent, '1');
+    doc.querySelector('[data-notification-id="notice-two"]').click(); assert.equal(badge.hidden, true);
+    doc.querySelector('[data-notification-back]').click(); assert.ok(doc.querySelector('.notification-empty').textContent.includes('อ่านครบแล้ว'));
+    rows.push({ id: 'notice-new', kind: 'command', title: 'New command', body: 'Command details', href: '/commands', at: '2026-10-07T12:00:00Z' });
+    doc.querySelector('[data-notification-refresh]').click(); await flush(); await flush(); assert.equal(badge.textContent, '1'); assert.equal(badge.hidden, false);
+    doc.querySelector('[data-notification-close]').click(); assert.equal(doc.querySelector('#notification-toggle').getAttribute('aria-expanded'), 'false');
   } finally { dom.window.close(); }
 });
 

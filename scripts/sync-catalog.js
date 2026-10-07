@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { readFile, mkdir, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
+import { commandNotifications } from '../lib/command-notifications.js';
 const root = path.resolve(process.argv[2] || '../Devil');
 const source = await readFile(path.join(root, 'deploy-commands.js'), 'utf8');
 const set = name => [...source.match(new RegExp(`const ${name} = new Set\\(\\[([\\s\\S]*?)\\]\\)`))[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
@@ -12,6 +13,9 @@ const vip = [...shop.match(/const PREMIUM_SHOP_COMMANDS = new Set\(\[([^\]]+)/)[
 const all = createRequire(import.meta.url)(path.join(root, 'deploy-commands.js')).allCommands;
 const commands = all.filter(c => [...globals, ...main, ...chat].includes(c.name)).map(c => ({ ...c, mode: vip.includes(c.name) ? 'VIP' : 'Public', scope: main.includes(c.name) ? 'main' : chat.includes(c.name) ? 'chat' : 'global', category: /rank/.test(c.name) ? 'Rank' : /verify|province/.test(c.name) ? 'Roles' : /spam|safe|ban/.test(c.name) ? 'Security' : /shop|buy/.test(c.name) ? 'Shop' : /ticket|welcom/.test(c.name) ? 'Community' : 'Tools' }));
 await mkdir('data', { recursive: true });
+const previous = await readFile('data/catalog.json', 'utf8').then(JSON.parse).catch(() => null);
+const notifications = await readFile('data/command-notifications.json', 'utf8').then(JSON.parse).catch(() => []);
+if (previous) await writeFile('data/command-notifications.json', JSON.stringify(commandNotifications(previous.commands, commands, notifications), null, 2));
 await writeFile('data/catalog.json', JSON.stringify({ syncedAt: new Date().toISOString(), commands }, null, 2));
 await copyFile('lib/settings-schema.cjs', path.join(root, 'website-settings-schema.cjs'));
 await mkdir('bot-integration', { recursive: true });

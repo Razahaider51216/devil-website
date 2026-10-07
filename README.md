@@ -52,6 +52,8 @@ Owner avatars, banners and avatar decorations are rendered only when returned by
 
 Run `npm test` to check OAuth state/session protection, role and guild access, VIP enforcement, live bot writes, stale configuration rejection, publish failures, CMS persistence, catalog filtering, and interactive DOM behavior. Full Discord OAuth and live panel publication require real environment credentials and a running bot. Browser visual QA requires an available Browser connection.
 
+The header notification bell shows unread published updates and features. CMS publication and content changes append persistent notifications beside the CMS data; drafts and unchanged saves do not notify. Removing or unpublishing the source removes its public notices. `npm run sync:catalog` also records newly added or changed Public/VIP commands in `data/command-notifications.json`; deploy this file with the updated catalog. The inbox refreshes every minute while visible and on browser focus. Opening the inbox does not mark everything read: open an individual message to clear its count. Read IDs are saved per Discord account (or guest) in that browser's local storage and do not sync between devices. Clearing browser storage restores unread counts for retained notices.
+
 ## Run locally
 
 When a timed QR card expires, the bot also removes the user's originating `?qr` command. The bot needs **Manage Messages** in that channel to delete user messages. Cleanup tracks each message separately, persists across restarts, and retries failed deletions even when the QR card has already been removed. Cards sent from the website or settings panel have no originating user command to remove. The countdown caption is “หมดเวลาชำระเงิน”.

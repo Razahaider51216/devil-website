@@ -58,6 +58,11 @@ export default async function handler(req, res) {
       return send(res, 200, { owners: results.filter(r => r.status === 'fulfilled').map(r => r.value), unavailable: results.filter(r => r.status === 'rejected').length, configured: owners().length > 0 });
     }
     if (action === 'content' && req.method === 'GET') return send(res, 200, await bridge('content'));
+    if (action === 'notifications' && req.method === 'GET') {
+      const [cms, commands] = await Promise.allSettled([bridge('notifications', {}, { timeoutMs: 5000 }), readFile(new URL('../data/command-notifications.json', import.meta.url), 'utf8').then(JSON.parse)]);
+      const rows = [...(cms.status === 'fulfilled' ? cms.value.notifications || [] : []), ...(commands.status === 'fulfilled' ? commands.value : [])];
+      return send(res, 200, { notifications: rows.sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 200), unavailable: cms.status !== 'fulfilled' });
+    }
     if (action === 'session' && req.method === 'GET') {
       if (!session) return send(res, 200, { user: null, loginConfigured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.SESSION_SECRET) });
       try { session = await restoreSession(session); }
