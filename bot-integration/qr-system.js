@@ -12,7 +12,7 @@ function buildQrPayload(config, expiresAt) {
     if (text) container.addTextDisplayComponents(new TextDisplayBuilder().setContent(text));
   }
   if (config.imageUrl) container.addMediaGalleryComponents(new MediaGalleryBuilder({ items: [{ media: { url: config.imageUrl } }] }));
-  if (expiresAt) container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`⏳ **หมดเวลาชำระเงิน**\n<t:${Math.floor(expiresAt / 1000)}:R> • ลบการ์ดอัตโนมัติเมื่อหมดเวลา`));
+  if (expiresAt) container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`⏳ **หมดเวลาชำระเงิน**\n<t:${Math.floor(expiresAt / 1000)}:R>`));
   if (config.imageUrl && config.buttonLabel) {
     const button = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(config.buttonLabel).setURL(config.imageUrl);
     const emoji = buttonEmoji(config.buttonEmoji);
@@ -37,8 +37,17 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
       timers.delete(messageId);
       try {
         const channel = await client.channels.fetch(record.channelId);
-        const message = await channel.messages.fetch(messageId);
-        await message.delete();
+        record.messageIds ||= [messageId, record.commandMessageId].filter(Boolean);
+        for (const targetId of [...record.messageIds]) {
+          try {
+            const message = await channel.messages.fetch(targetId);
+            await message.delete();
+          } catch (error) {
+            if (error.code !== 10008) throw error;
+          }
+          record.messageIds = record.messageIds.filter(id => id !== targetId);
+          saveData();
+        }
         delete data.qrPendingDeletes[messageId];
         saveData();
       } catch (error) {
@@ -64,13 +73,13 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
     timers.clear();
   }
 
-  async function sendQr(channel, guildId) {
+  async function sendQr(channel, guildId, commandMessageId = null) {
     const config = validateQrConfig(getConfig(guildId));
     if (!config.imageUrl) throw new Error('กรุณาตั้งค่าลิงก์รูป QR ก่อนส่ง');
     const expiresAt = config.autoDeleteMinutes ? now() + config.autoDeleteMinutes * 60000 : null;
     const message = await channel.send(buildQrPayload(config, expiresAt));
     if (expiresAt) {
-      data.qrPendingDeletes[message.id] = { guildId, channelId: channel.id, expiresAt };
+      data.qrPendingDeletes[message.id] = { guildId, channelId: channel.id, expiresAt, commandMessageId };
       saveData();
       scheduleDelete(message.id);
     }
@@ -204,7 +213,7 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
     const config = getConfig(message.guild.id);
     try {
       if (!config.imageUrl) await message.reply({ content: 'ยังไม่ได้ตั้งค่ารูป QR ให้ผู้ดูแลใช้ `/set-qr panel` ก่อน', allowedMentions: { parse: [], repliedUser: false } });
-      else await sendQr(message.channel, message.guild.id);
+      else await sendQr(message.channel, message.guild.id, message.id);
     } catch (error) {
       console.warn('Failed to send QR card:', error.message);
     }
