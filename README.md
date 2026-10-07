@@ -54,6 +54,8 @@ Run `npm test` to check OAuth state/session protection, role and guild access, V
 
 ## Run locally
 
+ระบบ **QR / เวลาชำระเงิน** ในหน้า Dashboard จัดการ `/set-qr panel` และ `?qr` ได้: เลือกช่องส่ง ตั้งค่าข้อความเหนือ Embed (`##`), หัวข้อ คำอธิบาย สี รูป QR และข้อความ/อิโมจิปุ่ม พร้อมกำหนดเวลาลบเป็นจำนวนเต็ม 0–1440 นาที (`5` = ลบหลังส่ง 5 นาที, `0` = ไม่ลบ) ปุ่ม **บันทึกและเผยแพร่แผง** ส่งการ์ด QR ลงช่องที่เลือกและเริ่มนับเวลา บอทบันทึกเวลาหมดอายุของแต่ละข้อความไว้และลบต่อหลังรีสตาร์ต ตัวอย่าง QR ที่ส่งใหม่ใช้ค่าล่าสุด ส่วนข้อความที่ส่งแล้วใช้เวลาเดิม ต้องติดตั้งตัวเชื่อมด้วย `npm run install:bot` และรีสตาร์ตบอทที่มีระบบ QR แล้วก่อนใช้งาน
+
 1. Copy `.env.example` to `.env`.
 2. Set `DISCORD_BOT_TOKEN` to your bot token and `DISCORD_INVITE_URL` to a permanent server invite. `DISCORD_GUILD_ID` is optional and chooses the server featured in the homepage snapshot; without it, the first joined server is featured.
 3. Run `npm start` and open `http://localhost:3000`.

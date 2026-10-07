@@ -10,6 +10,40 @@ const admin = { id: userId, permissions: { has: flag => [8n, 32n, 1024n].include
 const bot = { roles: { highest: { position: 10 } } };
 const channel = { id: channelId, name: 'welcome', type: 0, permissionsFor: () => ({ has: () => true }) };
 const guild = { id: guildId, name: 'Test community', ownerId: userId, members: { me: bot, fetch: async ({ user }) => user === userId ? admin : null, fetchMe: async () => bot }, channels: { cache: new Map([[channelId, channel]]), fetch: async () => {} }, roles: { cache: new Map(), fetch: async () => {} } };
+
+test('QR dashboard persists timer and styling, rejects invalid values and passes saved values to publish', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'devil-qr-dashboard-'));
+  const data = {}; let published;
+  const server = createDashboardServer({ client: { guilds: { cache: new Map([[guildId, guild]]) } }, data, saveData: () => {}, secret: 'test', contentPath: path.join(dir, 'content.json'), publish: async (system, g, m, config) => { published = { system, config }; } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const call = async body => {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/dashboard`, { method: 'POST', headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' }, body: JSON.stringify({ guildId, userId, ...body }) });
+    return { status: response.status, body: await response.json() };
+  };
+  try {
+    const qr = (await call({ action: 'settings-read' })).body.systems.find(s => s.id === 'qr');
+    assert.equal(qr.command, 'set-qr');
+    assert.equal(qr.values.autoDeleteMinutes, 0);
+    assert.equal(qr.values.title, 'สแกน QR Code');
+    const write = values => call({ action: 'settings-write', change: { system: 'qr', revision: qr.revision, values } });
+    for (const autoDeleteMinutes of [-1, 1.5, 1441]) assert.equal((await write({ autoDeleteMinutes })).status, 400);
+    assert.equal((await write({ buttonEmoji: 'not-emoji' })).status, 400);
+    assert.equal((await write({ imageUrl: 'https://user:pass@example.com/qr.png' })).status, 400);
+    assert.equal(data.qrConfigs, undefined);
+    const saved = await call({ action: 'settings-write', change: { system: 'qr', revision: qr.revision, publish: true, values: { channelId, autoDeleteMinutes: 5, content: '## ชำระเงิน 💸', imageUrl: 'https://example.com/qr.png', buttonEmoji: '📱' } } });
+    assert.equal(saved.status, 200);
+    assert.equal(saved.body.publishError, null);
+    assert.equal(data.qrConfigs[guildId].autoDeleteMinutes, 5);
+    assert.equal(data.qrConfigs[guildId].content, '## ชำระเงิน 💸');
+    assert.equal(published.system, 'qr');
+    assert.equal(published.config.channelId, channelId);
+    assert.equal(published.config.autoDeleteMinutes, 5);
+    assert.equal((await write({ autoDeleteMinutes: 0 })).status, 409);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 test('live bot bridge enforces membership, permissions, VIP, channel ownership and revisions; persists CMS', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'devil-dashboard-')); const contentPath = path.join(dir, 'content.json');
   const data = {}; let saves = 0;

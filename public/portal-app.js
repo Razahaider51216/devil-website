@@ -1,6 +1,6 @@
 const app = document.querySelector('#app');
 const icon = (name, cls = '') => window.DevilIcons.render(name, cls);
-const systemIcon = name => ({ welcome: 'welcome', ticket: 'ticket', spam: 'shield', safe: 'shield', rank: 'rank', shop: 'shop', 'shop-status': 'shop', chat: 'chat', verify: 'shield', 'verify-not': 'users', province: 'globe', giveaway: 'crown', announce: 'bell', search: 'search' }[name] || 'settings');
+const systemIcon = name => ({ welcome: 'welcome', ticket: 'ticket', spam: 'shield', safe: 'shield', rank: 'rank', shop: 'shop', 'shop-status': 'shop', chat: 'chat', verify: 'shield', 'verify-not': 'users', province: 'globe', giveaway: 'crown', announce: 'bell', search: 'search', qr: 'shop' }[name] || 'settings');
 const commandIcon = name => /welcom/.test(name) ? 'welcome' : /ticket/.test(name) ? 'ticket' : /spam|safe|ban|verify/.test(name) ? 'shield' : /rank/.test(name) ? 'rank' : /shop|buy/.test(name) ? 'shop' : /chat/.test(name) ? 'chat' : /province/.test(name) ? 'globe' : /giveaway/.test(name) ? 'crown' : 'command';
 function mountIcons(root = document) { root.querySelectorAll('[data-icon]').forEach(node => { const name = node.dataset.icon; node.removeAttribute('data-icon'); node.innerHTML = icon(name); }); }
 mountIcons();
@@ -173,7 +173,7 @@ async function dashboard() {
         const system = data.systems.find(s => s.id === id); document.querySelectorAll('[data-system]').forEach(b => b.classList.toggle('selected', b.dataset.system === id));
         const node = document.querySelector('#system-form');
         if (system.locked) { node.innerHTML = `<span class="badge vip">${icon('vip')}VIP ONLY</span><h2>VIP Shop</h2><p>เซิร์ฟเวอร์นี้ยังไม่มีสิทธิ์ Premium กรุณาติดต่อ Owner</p>`; return; }
-        node.innerHTML = `<div class="settings-head"><h3>${escape(system.label)}</h3><span class="badge ${system.vip ? 'vip' : 'public'}">/${escape(system.command)}</span></div><form><div class="form-grid">${system.fields.map(f => fieldHtml(f, system.values[f.key], data)).join('')}</div><div class="form-actions"><button class="button primary" type="submit">บันทึกการตั้งค่า</button>${system.publish ? `<button class="button ghost" type="submit" name="publish" value="yes">${system.id === 'safe' ? 'สร้างห้องดักสแปม' : 'บันทึกและเผยแพร่แผง'}</button>` : ''}<button type="button" class="button small" id="reload-settings">โหลดใหม่</button></div><div class="form-result" role="status"></div></form>`;
+        node.innerHTML = `<div class="settings-head"><h3>${escape(system.label)}</h3><span class="badge ${system.vip ? 'vip' : 'public'}">/${escape(system.command)}${system.id === 'qr' ? ' panel' : ''}</span></div>${system.id === 'qr' ? '<p>' + QR_HELP + '</p>' : ''}<form><div class="form-grid">${system.fields.map(f => fieldHtml(f, system.values[f.key], data)).join('')}</div><div class="form-actions"><button class="button primary" type="submit">บันทึกการตั้งค่า</button>${system.publish ? `<button class="button ghost" type="submit" name="publish" value="yes">${system.id === 'safe' ? 'สร้างห้องดักสแปม' : 'บันทึกและเผยแพร่แผง'}</button>` : ''}<button type="button" class="button small" id="reload-settings">โหลดใหม่</button></div><div class="form-result" role="status"></div></form>`;
         const form = node.querySelector('form'); const collections = bindCollections(form, system, data);
         node.querySelector('#reload-settings').onclick = () => select.onchange();
         form.onsubmit = async event => {
@@ -366,3 +366,4 @@ async function start() {
   } catch (e) { app.innerHTML = `<div class="container">${head('DEVIL BOT', 'ไม่สามารถโหลดข้อมูล', 'กรุณาลองอีกครั้ง')}<div class="error">${escape(e.message)}</div><button class="button primary" onclick="location.reload()">ลองใหม่</button></div>`; }
 }
 start(); if (route === '/') setInterval(refreshLive, 10000);
+const QR_HELP = 'ใช้ ?qr ใน Discord เพื่อส่งการ์ดที่บันทึกไว้ หรือกดบันทึกและเผยแพร่เพื่อส่งลงช่องที่เลือก ตั้งเวลาเป็นนาที เช่น 5; ใส่ 0 เพื่อปิดการลบอัตโนมัติ ข้อความที่ส่งแล้วจะใช้เวลาหมดอายุเดิม';

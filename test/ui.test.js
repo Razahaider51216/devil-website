@@ -15,6 +15,38 @@ const featureDemos = await readFile(new URL('../public/feature-demos.js', import
 const provinceRegions = await readFile(new URL('../public/province-regions.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
 const flush = () => new Promise(resolve => setImmediate(resolve));
+
+test('QR dashboard renders minute timer and sends edited QR settings on publish', async () => {
+  const { systems } = createRequire(import.meta.url)('../lib/settings-schema.cjs');
+  const { DEFAULTS } = createRequire(import.meta.url)('../bot-integration/qr-config.cjs');
+  const qr = { ...systems.find(s => s.id === 'qr'), revision: 'qr-rev', values: { ...DEFAULTS, channelId: '456' } };
+  let submitted;
+  const dom = await page('/dashboard', {
+    session: { user: { id: 'user', username: 'Admin' }, csrf: 'test' },
+    guilds: { guilds: [{ id: '123', name: 'Community', botPresent: true }] },
+    settings: (url, options) => {
+      if (options?.method === 'POST') { submitted = JSON.parse(options.body); return { revision: 'updated', values: submitted.values, publishError: null }; }
+      return { systems: [qr], channels: [{ id: '456', name: 'payment', type: 0 }], roles: [] };
+    }
+  });
+  try {
+    const doc = dom.window.document, select = doc.querySelector('#guild-select');
+    select.value = '123'; select.dispatchEvent(new dom.window.Event('change'));
+    await flush(); await flush();
+    assert.ok(doc.querySelector('#system-form').textContent.includes('/set-qr panel'));
+    const timer = doc.querySelector('[name=autoDeleteMinutes]');
+    assert.equal(timer.type, 'number'); assert.equal(timer.min, '0'); assert.equal(timer.max, '1440');
+    timer.value = '5';
+    doc.querySelector('[name=content]').value = '## โอนเงิน 💸';
+    doc.querySelector('[name=imageUrl]').value = 'https://example.com/qr.png';
+    doc.querySelector('[name=publish]').click();
+    await flush(); await flush();
+    assert.equal(submitted.system, 'qr'); assert.equal(submitted.publish, true);
+    assert.equal(submitted.values.autoDeleteMinutes, 5);
+    assert.equal(submitted.values.content, '## โอนเงิน 💸');
+    assert.equal(submitted.values.channelId, '456');
+  } finally { dom.window.close(); }
+});
 async function page(route, fixtures = {}) {
   const dom = new JSDOM(html, { url: `https://devil.example${route}`, runScripts: 'outside-only', pretendToBeVisual: true });
   dom.window.structuredClone = structuredClone;

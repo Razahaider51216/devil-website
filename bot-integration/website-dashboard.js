@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { timingSafeEqual, createHash } = require('node:crypto');
 const { systems, getPath, setPath } = require('./website-settings-schema.cjs');
+const { DEFAULTS: QR_DEFAULTS, validateQrConfig } = require('./qr-config.cjs');
 const { createOwnerTools } = require('./website-owner-tools.cjs');
 const { createFeaturePreviews } = require('./website-feature-previews.cjs');
 const { createPreviewImages } = require('./website-preview-images.cjs');
@@ -93,6 +94,7 @@ function createDashboardServer({ client, data, saveData, publish, ownerGuildIds,
     const result = {};
     for (const f of s.fields) { let value = getPath(stored, f.key); if (s.id === 'welcome' && f.key === 'welcomeChannelId') value ||= stored.channelId || data.welcomeChannels?.[guildId]; if (s.id === 'shop' && f.key === 'purchaseChannelId') value = data.purchaseChannels?.[guildId]; result[f.key] = value ?? (f.type === 'boolean' ? false : f.type === 'number' ? f.min : ['channels', 'roles', 'lines', 'responses'].includes(f.type) ? [] : ['products', 'rewards'].includes(f.type) ? {} : f.type === 'choice' ? f.choices[0] : ''); }
     for (const [key, value] of Object.entries(defaults[s.id] || {})) if (getPath(stored, key) === undefined) result[key] = value;
+    if (s.id === 'qr') for (const [key, value] of Object.entries(QR_DEFAULTS)) if (stored[key] === undefined) result[key] = value;
     return result;
   };
   const locks = new Set();
@@ -163,6 +165,10 @@ function createDashboardServer({ client, data, saveData, publish, ownerGuildIds,
       const current = s.scalar ? {} : structuredClone(data[s.store]?.[guild.id] || {});
       if (s.id === 'verify' && !data[s.store]?.[guild.id]) for (const [key, value] of Object.entries(config(s, guild.id))) setPath(current, key, value);
       const next = merge(current, patch); next.guildId = guild.id;
+      if (s.id === 'qr') {
+        try { Object.assign(next, validateQrConfig(next)); }
+        catch (error) { fail(400, error.message); }
+      }
       if (s.id === 'welcome') next.channelId = next.welcomeChannelId;
       if (s.scalar) (data[s.store] ||= {})[guild.id] = next.channelId || '';
       else (data[s.store] ||= {})[guild.id] = next;

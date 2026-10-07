@@ -58,6 +58,10 @@ if (IS_PUBLIC_BOT) {
       interaction.commandName = 'giveaway'; await giveawaySystem.handleCommand(interaction);
     } else if (system === 'safe') {
       interaction.commandName = 'safeserver'; await handleSafeServerCommand(interaction);
+    } else if (system === 'qr') {
+      const channel = guild.channels.cache.get(config.channelId);
+      if (!channel?.isTextBased()) throw new Error('กรุณาเลือกช่องส่งการ์ด QR');
+      await qrSystem.sendQr(channel, guild.id);
     } else if (system === 'announce') {
       const channel = guild.channels.cache.get(config.channelId);
       if (!channel?.isTextBased()) throw new Error('กรุณาเลือกช่องประกาศ');
