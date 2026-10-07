@@ -37,6 +37,10 @@ test('QR dashboard renders minute timer and sends edited QR settings on publish'
     const timer = doc.querySelector('[name=autoDeleteMinutes]');
     assert.equal(timer.type, 'number'); assert.equal(timer.min, '0'); assert.equal(timer.max, '1440');
     timer.value = '5';
+    const color = doc.querySelector('[name=color]');
+    assert.equal(color.placeholder, '#FF0000');
+    color.value = '#xyzxyz'; assert.equal(color.checkValidity(), false);
+    color.value = '#FF0000'; assert.equal(color.checkValidity(), true);
     doc.querySelector('[name=content]').value = '## โอนเงิน 💸';
     doc.querySelector('[name=imageUrl]').value = 'https://example.com/qr.png';
     doc.querySelector('[name=publish]').click();
@@ -45,6 +49,7 @@ test('QR dashboard renders minute timer and sends edited QR settings on publish'
     assert.equal(submitted.values.autoDeleteMinutes, 5);
     assert.equal(submitted.values.content, '## โอนเงิน 💸');
     assert.equal(submitted.values.channelId, '456');
+    assert.equal(submitted.values.color, '#FF0000');
   } finally { dom.window.close(); }
 });
 async function page(route, fixtures = {}) {

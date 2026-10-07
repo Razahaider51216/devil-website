@@ -84,7 +84,8 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
         'ข้อความรองรับอิโมจิ, **ตัวหนา**, ลิงก์ และบรรทัดใหม่',
         'ใช้ `## หัวข้อ` ในช่องข้อความเหนือ Embed เพื่อแสดงหัวข้อขนาดใหญ่',
         config.imageUrl ? '✅ ตั้งค่ารูป QR แล้ว' : '⚠️ กรุณาตั้งค่าลิงก์รูป QR ก่อนส่ง',
-        config.autoDeleteMinutes ? `⏳ ลบการ์ดหลังส่ง ${config.autoDeleteMinutes} นาที` : '⏳ ไม่ลบการ์ดอัตโนมัติ'
+        config.autoDeleteMinutes ? `⏳ ลบการ์ดหลังส่ง ${config.autoDeleteMinutes} นาที` : '⏳ ไม่ลบการ์ดอัตโนมัติ',
+        `🎨 สี Embed: \`${config.color}\``
       ].filter(Boolean).join('\n\n'))],
       components: [new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('qr:text').setLabel('ข้อความ / หัวข้อ').setStyle(ButtonStyle.Primary),
@@ -93,7 +94,8 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
         new ButtonBuilder().setCustomId('qr:preview').setLabel('ดูตัวอย่าง').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('qr:send').setLabel('ส่งลงห้องนี้').setStyle(ButtonStyle.Success)
       ), new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('qr:timer').setLabel('⏳ ตั้งเวลาลบ (นาที)').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId('qr:timer').setLabel('⏳ ตั้งเวลาลบ (นาที)').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('qr:color').setLabel('🎨 สี Embed (HEX)').setStyle(ButtonStyle.Secondary)
       )], allowedMentions: { parse: [] }
     };
   }
@@ -115,7 +117,8 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
       ],
       image: [['imageUrl', 'ลิงก์รูป QR (เว้นว่างเพื่อล้าง)', 512]],
       button: [['buttonLabel', 'ข้อความปุ่ม (เว้นว่างเพื่อซ่อนปุ่ม)', 80], ['buttonEmoji', 'อิโมจิปุ่ม (เว้นว่างเพื่อล้าง)', 100]],
-      timer: [['autoDeleteMinutes', 'ลบหลังส่งกี่นาที เช่น 5 (0 = ไม่ลบ)', 4]]
+      timer: [['autoDeleteMinutes', 'ลบหลังส่งกี่นาที เช่น 5 (0 = ไม่ลบ)', 4]],
+      color: [['color', 'สี HEX 6 หลัก เช่น #FF0000', 7]]
     }[kind];
     const result = new ModalBuilder().setCustomId(`qr:modal:${kind}`).setTitle('ตั้งค่าการ์ด QR');
     for (const [key, label, max, paragraph] of fields) {
@@ -138,7 +141,7 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
     if (!await authorize(interaction)) return true;
     const kind = interaction.customId.slice(3);
     const config = getConfig(interaction.guildId);
-    if (['text', 'image', 'button', 'timer'].includes(kind)) {
+    if (['text', 'image', 'button', 'timer', 'color'].includes(kind)) {
       await interaction.showModal(modal(kind, config));
     } else if (['preview', 'send'].includes(kind)) {
       if (kind === 'send' && !config.imageUrl) {
@@ -162,7 +165,7 @@ function createQrSystem({ client, data, saveData, now = Date.now, setTimer = set
     if (!interaction.customId.startsWith('qr:modal:')) return false;
     if (!await authorize(interaction)) return true;
     const kind = interaction.customId.slice('qr:modal:'.length);
-    const keys = { text: ['content', 'title', 'description', 'footer', 'color'], image: ['imageUrl'], button: ['buttonLabel', 'buttonEmoji'], timer: ['autoDeleteMinutes'] }[kind];
+    const keys = { text: ['content', 'title', 'description', 'footer', 'color'], image: ['imageUrl'], button: ['buttonLabel', 'buttonEmoji'], timer: ['autoDeleteMinutes'], color: ['color'] }[kind];
     if (!keys) return false;
     try {
       const patch = Object.fromEntries(keys.map(key => [key, interaction.fields.getTextInputValue(key)]));

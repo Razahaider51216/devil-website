@@ -136,6 +136,7 @@ function fieldHtml(f, value, data) {
   } else if (f.type === 'choice') control = `<select ${name}>${f.choices.map(v => option(v, v, v === value)).join('')}</select>`;
   else if (['products', 'rewards', 'responses'].includes(f.type)) control = `<div data-collection="${escape(f.key)}" data-type="${f.type}"></div>`;
   else if (f.type === 'lines' || (f.type === 'text' && (!f.max || f.max > 256))) control = `<textarea ${name} maxlength="${f.max || 10000}">${escape(Array.isArray(value) ? value.join('\n') : value)}</textarea>`;
+  else if (f.type === 'color') control = `<input ${name} type="text" value="${escape(value)}" maxlength="7" pattern="#[0-9a-fA-F]{6}" placeholder="#FF0000" title="สี HEX 6 หลัก เช่น #FF0000">`;
   else control = `<input ${name} type="${({ number: 'number', color: 'text', url: 'url', time: 'time' })[f.type] || 'text'}" value="${escape(value)}" ${f.type === 'number' ? `min="${f.min}" max="${f.max}"` : ''} ${f.max ? `maxlength="${f.max}"` : ''} ${f.type === 'url' ? 'placeholder="https://…"' : ''}>`;
   return `<label class="${['products', 'rewards', 'responses', 'lines'].includes(f.type) ? 'wide' : ''}">${label}${control}${['channels', 'roles'].includes(f.type) ? '<small>เลือกหลายรายการ: Ctrl / ⌘ + คลิก</small>' : ''}</label>`;
 }

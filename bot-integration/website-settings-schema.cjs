@@ -4,7 +4,7 @@ const text = (key, label, max = 2000) => field(key, label, 'text', { max });
 const toggle = (key, label) => field(key, label, 'boolean');
 const num = (key, label, min, max) => field(key, label, 'number', { min, max });
 const image = (key = 'imageUrl', label = 'รูปภาพ (HTTPS URL)') => field(key, label, 'url');
-const color = (key = 'embedColor') => field(key, 'สี Embed', 'color');
+const color = (key = 'embedColor') => field(key, 'สี Embed (HEX เช่น #FF0000)', 'color', { max: 7 });
 const panel = [text('title', 'หัวข้อ', 256), text('description', 'ข้อความ', 2000), image(), text('buttonLabel', 'ข้อความปุ่ม', 80), text('buttonEmoji', 'อิโมจิปุ่ม', 100)];
 const systems = [
   { id: 'qr', label: 'QR / เวลาชำระเงิน', command: 'set-qr', store: 'qrConfigs', publish: true, fields: [channel('channelId', 'ช่องส่งการ์ด QR'), text('content', 'ข้อความเหนือ Embed (รองรับ ## และอิโมจิ)', 2000), text('title', 'หัวข้อ Embed', 256), text('description', 'คำอธิบาย (Markdown / อิโมจิ)', 4000), text('footer', 'ข้อความท้าย Embed', 1000), color('color'), field('imageUrl', 'ลิงก์รูป QR (HTTPS)', 'url', { max: 512 }), text('buttonLabel', 'ข้อความปุ่มเปิด QR (ว่าง = ซ่อน)', 80), text('buttonEmoji', 'อิโมจิปุ่ม เช่น 📱 หรือ <:name:id>', 100), num('autoDeleteMinutes', 'ลบการ์ดหลังส่ง (นาที): 0 = ไม่ลบอัตโนมัติ', 0, 1440)] },
